@@ -201,7 +201,21 @@ class OpenAIChat(LLM):
         return _dict
 
     def invoke(self, messages: List[Message]) -> ChatCompletion:
+
+        invoke_args = {
+            "model": self.model,
+            "messages": [m.to_dict() for m in messages],
+            **self.api_kwargs,
+        }
+
         return self.get_client().chat.completions.create(
+            model=self.model,
+            messages=[m.to_dict() for m in messages],  # type: ignore
+            **self.api_kwargs,
+        )
+
+    def parse(self, messages: List[Message]) -> ChatCompletion:
+        return self.get_client().beta.chat.completions.parse(
             model=self.model,
             messages=[m.to_dict() for m in messages],  # type: ignore
             **self.api_kwargs,

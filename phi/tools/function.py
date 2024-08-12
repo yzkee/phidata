@@ -12,6 +12,7 @@ class Function(BaseModel):
     name: str
     # A description of what the function does, used by the model to choose when and how to call the function.
     description: Optional[str] = None
+    strict: Optional[bool] = None
     # The parameters the functions accepts, described as a JSON Schema object.
     # To describe a function that accepts no parameters, provide the value {"type": "object", "properties": {}}.
     parameters: Dict[str, Any] = {"type": "object", "properties": {}}
@@ -21,7 +22,7 @@ class Function(BaseModel):
     sanitize_arguments: bool = True
 
     def to_dict(self) -> Dict[str, Any]:
-        return self.model_dump(exclude_none=True, include={"name", "description", "parameters"})
+        return self.model_dump(exclude_none=True, include={"name", "description", "strict", "parameters"})
 
     @classmethod
     def from_callable(cls, c: Callable) -> "Function":
