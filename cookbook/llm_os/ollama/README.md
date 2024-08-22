@@ -4,26 +4,6 @@ Lets build the LLM OS proposed by Andrej Karpathy [in this tweet](https://twitte
 
 Also checkout my [video](https://x.com/ashpreetbedi/status/1790109321939829139) on building the LLM OS for more information.
 
-## The LLM OS design:
-
-<img alt="LLM OS" src="https://github.com/phidatahq/phidata/assets/22579644/5cab9655-55a9-4027-80ac-badfeefa4c14" width="600" />
-
-- LLMs are the kernel process of an emerging operating system.
-- This process (LLM) can solve problems by coordinating other resources (memory, computation tools).
-- The LLM OS:
-  - [x] Can read/generate text
-  - [x] Has more knowledge than any single human about all subjects
-  - [x] Can browse the internet
-  - [x] Can use existing software infra (calculator, python, mouse/keyboard)
-  - [ ] Can see and generate images and video
-  - [ ] Can hear and speak, and generate music
-  - [ ] Can think for a long time using a system 2
-  - [ ] Can “self-improve” in domains
-  - [ ] Can be customized and fine-tuned for specific tasks
-  - [x] Can communicate with other LLMs
-
-[x] indicates functionality that is implemented in this LLM OS app
-
 ## Running the LLM OS:
 
 > Note: Fork and clone this repository if needed
@@ -41,9 +21,9 @@ source ~/.venvs/aienv/bin/activate
 pip install -r cookbook/llm_os/requirements.txt
 ```
 
-### 3. Export credentials
+### 3. Ollama installation
 
-- This implementation uses Ollama Llama 3.1 8b, so you will need to install ollama.
+- This implementation uses Ollama Llama 3.1 8b, so you will need to [install ollama](https://ollama.com/download).
 
 Once installed pull Llama3.1
 
