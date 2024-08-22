@@ -70,7 +70,7 @@ streamlit run cookbook/llm_os/app.py
 
 - Open [localhost:8501](http://localhost:8501) to view your LLM OS.
 - Add a blog post to knowledge base: https://blog.samaltman.com/gpt-4o
-- Ask: What is gpt-4o?
+- Ask: What is ollama?
 - Web search: Whats happening in france?
 - Calculator: Whats 10!
 - Enable shell tools and ask: is docker running?
