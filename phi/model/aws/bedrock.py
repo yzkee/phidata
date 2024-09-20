@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from phi.aws.api_client import AwsApiClient
 from phi.model.base import Model
@@ -144,49 +144,6 @@ class AwsBedrock(Model):
 
         return self.bedrock_runtime_client.converse(**request_params)
 
-    def invoke_stream(
-        self,
-        modelId: str,
-        messages: List[Dict[str, Any]],
-        toolConfig: Optional[Dict[str, Any]] = None,
-        system: Optional[List[Dict[str, Any]]] = None,
-        inferenceConfig: Optional[Dict[str, Any]] = None,
-        additionalModelRequestFields: Optional[Dict[str, Any]] = None,
-    ) -> Iterator[Dict[str, Any]]:
-        """
-        Invokes the Bedrock model in streaming mode.
-
-        Args:
-            modelId (str): The identifier of the model to invoke.
-            messages (List[Dict[str, Any]]): The messages to send to the model.
-            toolConfig (Optional[Dict[str, Any]], optional): Configuration for tools. Defaults to None.
-            system (Optional[List[Dict[str, Any]]], optional): System prompts. Defaults to None.
-            inferenceConfig (Optional[Dict[str, Any]], optional): Inference configuration. Defaults to None.
-            additionalModelRequestFields (Optional[Dict[str, Any]], optional): Additional request fields. Defaults to None.
-
-        Returns:
-            Iterator[Dict[str, Any]]: An iterator over the streaming response.
-        """
-        logger.debug(f"Making Bedrock request with modelId: {modelId}")
-
-        request_params: Dict[str, Any] = {"modelId": modelId, "messages": messages}
-
-        if toolConfig is not None:
-            request_params["toolConfig"] = toolConfig
-
-        if system is not None:
-            request_params["system"] = system
-
-        if inferenceConfig is not None:
-            request_params["inferenceConfig"] = inferenceConfig
-
-        if additionalModelRequestFields is not None:
-            request_params["additionalModelRequestFields"] = (
-                additionalModelRequestFields
-            )
-
-        return self.bedrock_runtime_client.converse_stream(**request_params)
-
     def prepare_system_prompt(
         self, sys_prompt: Optional[str]
     ) -> Optional[List[Dict[str, str]]]:
@@ -294,15 +251,12 @@ class AwsBedrock(Model):
         assistant_message.metrics["time"] = response_timer.elapsed
         self.metrics.setdefault("response_times", []).append(response_timer.elapsed)
 
-        # Token usage (placeholder values; replace with actual values if available)
-        prompt_tokens: int = 0
-        completion_tokens: int = 0
-        total_tokens: int = prompt_tokens + completion_tokens
+        # Token usage (use the values directly from assistant_message.metrics)
+        prompt_tokens: int = assistant_message.metrics.get("prompt_tokens", 0)
+        completion_tokens: int = assistant_message.metrics.get("completion_tokens", 0)
+        total_tokens: int = assistant_message.metrics.get("total_tokens", 0)
 
-        assistant_message.metrics["prompt_tokens"] = prompt_tokens
-        assistant_message.metrics["completion_tokens"] = completion_tokens
-        assistant_message.metrics["total_tokens"] = total_tokens
-
+        # Update overall metrics
         self.metrics["prompt_tokens"] = (
             self.metrics.get("prompt_tokens", 0) + prompt_tokens
         )
@@ -373,7 +327,6 @@ class AwsBedrock(Model):
         response_after_tool_calls = self.response(messages=messages)
         if response_after_tool_calls.content:
             model_response.content += response_after_tool_calls.content
-
         return model_response
 
     def format_tool_calls(self, function_calls_to_run: List[Any]) -> str:
@@ -473,7 +426,18 @@ class AwsBedrock(Model):
         logger.debug(f"Response: {response}")
 
         # Process the model's response to extract the assistant's message and any relevant information
+        # This determines the response content, tool calls, and metrics
         assistant_message: Message = self.process_response(response)
+
+        # Extract usage data from the response and unpack into assistant_message.metrics
+        usage = response.get("usage", {})
+        assistant_message.metrics.update(
+            {
+                "prompt_tokens": usage.get("inputTokens", 0),
+                "completion_tokens": usage.get("outputTokens", 0),
+                "total_tokens": usage.get("totalTokens", 0),
+            }
+        )
 
         # Add the assistant's message to the conversation history
         messages.append(assistant_message)
@@ -487,6 +451,7 @@ class AwsBedrock(Model):
         # If the assistant's message includes any tool calls and running tools is enabled,
         # handle the tool calls and return the updated model response
         if assistant_message.tool_calls and self.run_tools:
+            logger.debug(f"Assistant message has tool calls: {assistant_message}")
             return self.handle_tool_calls(messages, assistant_message, model_response)
 
         # If the assistant's message contains content, set it as the content of the model response
@@ -500,6 +465,117 @@ class AwsBedrock(Model):
         # Return the final model response to the caller
         return model_response
 
+    def create_message_from_stream_result(self, response: Dict[str, Any]) -> Message:
+        """
+        Processes the response from the model and creates an assistant message.
+        Args:
+            response (Dict[str, Any]): The response from the model invocation.
+        Returns:
+            Message: The assistant message generated from the response.
+        """
+        content = response.get("content", [])
+        role = response.get("role", "")
+        
+        response_content: Union[List[Dict], str] = []
+        tool_calls: List[Dict[str, Any]] = []
+
+        for item in content:
+            if "text" in item:
+                if isinstance(response_content, list):
+                    response_content.append({"text": item["text"]})
+            elif "toolUse" in item:
+                tool_use = item["toolUse"]
+                tool_call = {
+                    "id": tool_use.get("toolUseId", ""),
+                    "type": "function",
+                    "function": {
+                        "name": tool_use.get("name", ""),
+                        "arguments": json.dumps(tool_use.get("input", {}))
+                    }
+                }
+                tool_calls.append(tool_call)
+
+        logger.debug(f"Response content: {response_content}")
+        
+        assistant_message = Message(
+            role=role,
+            content=response_content,
+            tool_calls=tool_calls if tool_calls else None
+        )
+        return assistant_message
+
+    def stream_messages(self,
+                        model_id: str,
+                        messages: List[Dict[str, Any]],
+                        tool_config: Optional[Dict[str, Any]] = None,
+                        sys_prompt: Optional[str] = None):
+        """
+        Sends a message to a model and streams the response.
+        Args:
+            bedrock_client: The Boto3 Bedrock runtime client.
+            model_id (str): The model ID to use.
+            messages (JSON) : The messages to send to the model.
+            tool_config : Tool Information to send to the model.
+            sys_prompt : System prompt to send to the model.
+
+        Returns:
+            stop_reason (str): The reason why the model stopped generating text.
+            message (JSON): The message that the model generated.
+            usage (JSON): The usage metrics for the model.
+
+        """
+
+        logger.info("Streaming messages with model %s", model_id)
+
+        response = self.bedrock_runtime_client.converse_stream(
+            modelId=model_id,
+            messages=messages,
+            toolConfig={"tools": tool_config},
+            system=sys_prompt
+        )
+
+        stop_reason = ""
+    
+        message = {}
+        content = []
+        message['content'] = content
+        text = ''
+        tool_use = {}
+
+
+        # stream the response into a message.
+        for chunk in response['stream']:
+            if 'messageStart' in chunk:
+                message['role'] = chunk['messageStart']['role']
+            elif 'contentBlockStart' in chunk:
+                tool = chunk['contentBlockStart']['start']['toolUse']
+                tool_use['toolUseId'] = tool['toolUseId']
+                tool_use['name'] = tool['name']
+            elif 'contentBlockDelta' in chunk:
+                delta = chunk['contentBlockDelta']['delta']
+                if 'toolUse' in delta:
+                    if 'input' not in tool_use:
+                        tool_use['input'] = ''
+                    tool_use['input'] += delta['toolUse']['input']
+                elif 'text' in delta:
+                    text += delta['text']
+                    yield ModelResponse(content=delta['text'])
+            elif 'contentBlockStop' in chunk:
+                if 'input' in tool_use:
+                    tool_use['input'] = json.loads(tool_use['input'])
+                    content.append({'toolUse': tool_use})
+                    tool_use = {}
+                else:
+                    content.append({'text': text})
+                    text = ''
+            elif 'metadata' in chunk:
+                usage = chunk['metadata']['usage']
+
+            elif 'messageStop' in chunk:
+                stop_reason = chunk['messageStop']['stopReason']
+
+        yield {'stop_reason': stop_reason, 'message': message, 'usage': usage}
+
     def response_stream(self, messages: List[Message]) -> Iterator[ModelResponse]:
         """
         Generates a streaming response based on the given messages.
@@ -510,7 +586,7 @@ class AwsBedrock(Model):
         Yields:
             Iterator[ModelResponse]: An iterator over model responses.
         """
-
+        model_response = ModelResponse()
         # Log the start of the streaming response generation process for debugging purposes
         logger.debug("---------- Bedrock Response Start ----------")
 
@@ -527,82 +603,65 @@ class AwsBedrock(Model):
         logger.debug(f"Tools: {tools}")
 
         # Extract and prepare the system prompt if provided
-        sys_prompt = request_body.get("system", None)
-        if sys_prompt is not None:
-            # Format the system prompt as expected by the model
-            sys_prompt = [{"text": sys_prompt}]
-            logger.debug(f"System prompt: {sys_prompt}")
+        sys_prompt = self.prepare_system_prompt(request_body.get("system"))
+        logger.debug(f"System prompt: {sys_prompt}")
 
         # Extract the content of the messages to be sent to the model
-        request_content = request_body.get("messages", None)
+        request_content = self.prepare_request_content(request_body)
         logger.debug(f"Request Content: {request_content}")
 
-        # Invoke the model's streaming interface with the prepared request content, system prompt, and tool configuration
-        response = self.invoke_stream(
-            modelId=self.model,
-            messages=request_content,
-            toolConfig={"tools": tools} if tools else None,
-            system=sys_prompt,
+        for response_chunk in self.stream_messages(self.model, request_content, tools, sys_prompt):
+                if isinstance(response_chunk, ModelResponse):
+                    # Yield the ModelResponse objects as they come
+                    yield response_chunk
+                else:
+                    # Handle the final stop_reason and message
+                    stop_reason = response_chunk.get('stop_reason')
+                    message = response_chunk.get('message')
+                    usage = response_chunk.get('usage')
+
+        assistant_message = self.create_message_from_stream_result(message)
+        assistant_message.metrics.update(
+            {
+                "prompt_tokens": usage.get("inputTokens", 0),
+                "completion_tokens": usage.get("outputTokens", 0),
+                "total_tokens": usage.get("totalTokens", 0),
+            }
         )
-
-        # Initialize variables to accumulate the assistant's message content and token usage metrics
-        assistant_message_content: str = ""
-        response_prompt_tokens: int = 0
-        response_completion_tokens: int = 0
-
-        # Retrieve the streaming response from the model
-        stream = response.get("stream")
-        if stream:
-            # Iterate over each event in the streaming response
-            for event in stream:
-                # If the event contains a chunk of the assistant's message
-                if "contentBlockDelta" in event:
-                    message_content: str = event["contentBlockDelta"]["delta"]["text"]
-                    if message_content is not None:
-                        # Yield the current chunk of the assistant's message
-                        yield ModelResponse(content=message_content)
-                        # Accumulate the assistant's message content
-                        assistant_message_content += message_content
-                # If the event contains metadata, such as token usage information
-                if "metadata" in event:
-                    metadata = event["metadata"]
-                    if "usage" in metadata:
-                        # Accumulate the token usage counts from the metadata
-                        response_prompt_tokens += metadata["usage"]["inputTokens"]
-                        response_completion_tokens += metadata["usage"]["outputTokens"]
-
-            # Stop the response timer and log how long it took to generate the response
-            response_timer.stop()
-            logger.debug(f"Time to generate response: {response_timer.elapsed:.4f}s")
-
-        # Calculate the total number of tokens used in the response
-        total_tokens: int = response_prompt_tokens + response_completion_tokens
-
-        # Create a new assistant message with the accumulated content and usage metrics
-        assistant_message = Message(
-            role="assistant",
-            content=(
-                assistant_message_content if assistant_message_content != "" else None
-            ),
-            metrics={
-                "time_to_first_token": None,  # Placeholder for future implementation
-                "time_per_output_token": (
-                    f"{response_timer.elapsed / response_completion_tokens:.4f}s"
-                    if response_completion_tokens > 0
-                    else None
-                ),
-                "prompt_tokens": response_prompt_tokens,
-                "completion_tokens": response_completion_tokens,
-                "total_tokens": total_tokens,
-            },
-        )
-
-        # Add the assistant's message to the conversation history
-        messages.append(assistant_message)
-
-        # Log the assistant's message for debugging purposes
         assistant_message.log()
+        messages.append(assistant_message)
+        logger.debug(f"Messages: {messages}")
+        logger.debug(f"Stop reason: {stop_reason}")
 
-        # Log the end of the streaming response generation process
-        logger.debug("---------- Bedrock Response End ----------")
-        logger.debug(messages)
+        # if stop_reason == "tool_use":
+
+        #     for content in message['content']:
+        #         if 'toolUse' in content:
+        #             tool = content['toolUse']
+
+        #             if tool['name'] == 'top_song':
+        #                 tool_result = {}
+        #                 try:
+        #                     song, artist = get_top_song(tool['input']['sign'])
+        #                     tool_result = {
+        #                         "toolUseId": tool['toolUseId'],
+        #                         "content": [{"json": {"song": song, "artist": artist}}]
+        #                     }
+        #                 except StationNotFoundError as err:
+        #                     tool_result = {
+        #                         "toolUseId": tool['toolUseId'],
+        #                         "content": [{"text":  err.args[0]}],
+        #                         "status": 'error'
+        #                     }
+
+        #                 tool_result_message = {
+        #                     "role": "user",
+        #                     "content": [
+        #                         {
+        #                             "toolResult": tool_result
+
+        #                         }
+        #                     ]
+        #                 }
+        #                 # Add the result info to message. 
+        #                 messages.append(tool_result_message)        
