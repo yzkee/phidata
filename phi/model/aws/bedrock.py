@@ -272,7 +272,9 @@ class AwsBedrock(Model):
         messages: List[Message],
         assistant_message: Message,
         model_response: ModelResponse,
-    ) -> ModelResponse:
+        stream: bool = False,
+        sys_prompt: Optional[str] = None,
+    ) -> Iterator[ModelResponse]:
         """
         Handles tool calls by executing the functions and updating the response.
 
@@ -290,7 +292,6 @@ class AwsBedrock(Model):
         tool_ids: List[str] = [
             tool_call["tool_use_id"] for tool_call in assistant_message.tool_calls
         ]
-
         for tool_call in assistant_message.tool_calls:
             function_call = get_function_call_for_tool_call(tool_call, self.functions)
             if function_call is None:
@@ -324,10 +325,11 @@ class AwsBedrock(Model):
                 )  # Fallback to string representation
 
         # Get new response after tool calls
-        response_after_tool_calls = self.response(messages=messages)
-        if response_after_tool_calls.content:
-            model_response.content += response_after_tool_calls.content
-        return model_response
+        if not stream:
+            response_after_tool_calls = self.response(messages=messages, sys_prompt=sys_prompt)
+            if response_after_tool_calls.content:
+                model_response.content += response_after_tool_calls.content
+            return model_response
 
     def format_tool_calls(self, function_calls_to_run: List[Any]) -> str:
         """
@@ -486,7 +488,7 @@ class AwsBedrock(Model):
             elif "toolUse" in item:
                 tool_use = item["toolUse"]
                 tool_call = {
-                    "id": tool_use.get("toolUseId", ""),
+                    "tool_use_id": tool_use.get("toolUseId", ""),
                     "type": "function",
                     "function": {
                         "name": tool_use.get("name", ""),
@@ -508,7 +510,7 @@ class AwsBedrock(Model):
                         model_id: str,
                         messages: List[Dict[str, Any]],
                         tool_config: Optional[Dict[str, Any]] = None,
-                        sys_prompt: Optional[str] = None):
+                        sys_prompt: Optional[str] = None) -> Iterator[Dict[str, Any]]:
         """
         Sends a message to a model and streams the response.
         Args:
@@ -527,12 +529,16 @@ class AwsBedrock(Model):
 
         logger.info("Streaming messages with model %s", model_id)
 
-        response = self.bedrock_runtime_client.converse_stream(
-            modelId=model_id,
-            messages=messages,
-            toolConfig={"tools": tool_config},
-            system=sys_prompt
-        )
+        request_params = {"modelId": model_id, "messages": messages}
+
+        if tool_config is not None:
+            request_params["toolConfig"] = {"tools": tool_config}
+        
+        if sys_prompt is not None:
+            request_params["system"] = sys_prompt
+
+        response = self.bedrock_runtime_client.converse_stream(**request_params)
+        
 
         stop_reason = ""
     
@@ -574,11 +580,14 @@ class AwsBedrock(Model):
             elif 'messageStop' in chunk:
                 stop_reason = chunk['messageStop']['stopReason']
 
+        # return the results of the stream as a dictionary
         yield {'stop_reason': stop_reason, 'message': message, 'usage': usage}
 
     def response_stream(self, messages: List[Message]) -> Iterator[ModelResponse]:
         """
         Generates a streaming response based on the given messages.
+
+        If a tool call is detected, it will preform single turn tool use and return the results
 
         Args:
             messages (List[Message]): The conversation messages.
@@ -608,18 +617,21 @@ class AwsBedrock(Model):
 
         # Extract the content of the messages to be sent to the model
         request_content = self.prepare_request_content(request_body)
+
         logger.debug(f"Request Content: {request_content}")
 
+        # Stream the initial messages from the model
         for response_chunk in self.stream_messages(self.model, request_content, tools, sys_prompt):
                 if isinstance(response_chunk, ModelResponse):
                     # Yield the ModelResponse objects as they come
                     yield response_chunk
                 else:
-                    # Handle the final stop_reason and message
+                    # Handle the final stop_reason, message, and usage
                     stop_reason = response_chunk.get('stop_reason')
                     message = response_chunk.get('message')
                     usage = response_chunk.get('usage')
 
+        # Create assistant message from the streamed response
         assistant_message = self.create_message_from_stream_result(message)
         assistant_message.metrics.update(
             {
@@ -630,38 +642,76 @@ class AwsBedrock(Model):
         )
         assistant_message.log()
         messages.append(assistant_message)
+
+        # Check if the stop reason is tool use, if so handle tool calls (run tools and add results to message)
+        if stop_reason == "tool_use":
+           # This will update Messages with the tool call results
+           self.handle_tool_calls(messages, assistant_message, model_response, stream=True, sys_prompt=sys_prompt)
+
+        logger.debug(f"Streaming final response from the model")
         logger.debug(f"Messages: {messages}")
-        logger.debug(f"Stop reason: {stop_reason}")
+        # Send the messages to the model to get the final response
+        final_messages = []
+        # skipping the first message because it is the system prompt
+        for i in messages[1:]:
+            roles = i.role
+            content = i.content
+            if isinstance(content, list) and all(isinstance(item, dict) and 'text' in item for item in content):
+                # Content is already in the desired format
+                pass
+            elif isinstance(content, str):
+                try:
+                    # Try to parse the content as JSON
+                    parsed_content = json.loads(content)
+                    if isinstance(parsed_content, list):
+                        # Handle list of parsed items
+                        new_content = []
+                        for item in parsed_content:
+                            if isinstance(item, dict) and 'content' in item:
+                                # If 'content' is a JSON string, parse it
+                                inner_content = item['content']
+                                try:
+                                    inner_parsed_content = json.loads(inner_content)
+                                    if isinstance(inner_parsed_content, list):
+                                        for inner_item in inner_parsed_content:
+                                            new_content.append({'text': json.dumps(inner_item)})
+                                    else:
+                                        new_content.append({'text': str(inner_parsed_content)})
+                                except json.JSONDecodeError:
+                                    new_content.append({'text': inner_content})
+                            else:
+                                new_content.append({'text': str(item)})
+                        content = new_content
+                    else:
+                        content = [{"text": str(parsed_content)}]
+                except json.JSONDecodeError:
+                    content = [{"text": content}]
+            else:
+                content = [{"text": str(content)}]
+            final_messages.append({"role": roles, "content": content})
 
-        # if stop_reason == "tool_use":
+        # Stream the final messages from the model
+        logger.debug(f"Final messages: {final_messages}")
+        for response_chunk in self.stream_messages(self.model, final_messages, sys_prompt=sys_prompt):
+                if isinstance(response_chunk, ModelResponse):
+                    # Yield the ModelResponse objects as they come
+                    yield response_chunk
+                else:
+                    # Handle the final stop_reason and message
+                    stop_reason = response_chunk.get('stop_reason')
+                    message = response_chunk.get('message')
+                    usage = response_chunk.get('usage')
 
-        #     for content in message['content']:
-        #         if 'toolUse' in content:
-        #             tool = content['toolUse']
+        # Create assistant message from the final streamed response
+        assistant_message = self.create_message_from_stream_result(message)
+        assistant_message.metrics.update(
+            {
+                "prompt_tokens": usage.get("inputTokens", 0),
+                "completion_tokens": usage.get("outputTokens", 0),
+                "total_tokens": usage.get("totalTokens", 0),
+            }
+        )
+        assistant_message.log()
+        messages.append(assistant_message)
 
-        #             if tool['name'] == 'top_song':
-        #                 tool_result = {}
-        #                 try:
-        #                     song, artist = get_top_song(tool['input']['sign'])
-        #                     tool_result = {
-        #                         "toolUseId": tool['toolUseId'],
-        #                         "content": [{"json": {"song": song, "artist": artist}}]
-        #                     }
-        #                 except StationNotFoundError as err:
-        #                     tool_result = {
-        #                         "toolUseId": tool['toolUseId'],
-        #                         "content": [{"text":  err.args[0]}],
-        #                         "status": 'error'
-        #                     }
-
-        #                 tool_result_message = {
-        #                     "role": "user",
-        #                     "content": [
-        #                         {
-        #                             "toolResult": tool_result
-
-        #                         }
-        #                     ]
-        #                 }
-        #                 # Add the result info to message. 
-        #                 messages.append(tool_result_message)        
+        yield model_response
