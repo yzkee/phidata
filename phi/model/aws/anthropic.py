@@ -1,7 +1,9 @@
-from typing import Optional, List, Dict, Any
+import json
+from typing import Any, Dict, List, Optional
 
-from phi.model.message import Message
 from phi.model.aws.bedrock import AwsBedrock
+from phi.model.message import Message
+from phi.utils.log import logger
 
 
 class Claude(AwsBedrock):
@@ -53,10 +55,14 @@ class Claude(AwsBedrock):
         for f_name, function in self.functions.items():
             required_params = [
                 param_name
-                for param_name, param_info in function.parameters.get("properties", {}).items()
+                for param_name, param_info in function.parameters.get(
+                    "properties", {}
+                ).items()
                 if "null"
                 not in (
-                    param_info.get("type") if isinstance(param_info.get("type"), list) else [param_info.get("type")]
+                    param_info.get("type")
+                    if isinstance(param_info.get("type"), list)
+                    else [param_info.get("type")]
                 )
             ]
             tools.append(
@@ -70,9 +76,12 @@ class Claude(AwsBedrock):
                                 "properties": {
                                     param_name: {
                                         "type": param_info.get("type") or "",
-                                        "description": param_info.get("description") or "",
+                                        "description": param_info.get("description")
+                                        or "",
                                     }
-                                    for param_name, param_info in function.parameters.get("properties", {}).items()
+                                    for param_name, param_info in function.parameters.get(
+                                        "properties", {}
+                                    ).items()
                                 },
                                 "required": required_params,
                             }
@@ -89,7 +98,9 @@ class Claude(AwsBedrock):
             if m.role == "system":
                 system_prompt = m.content
             else:
-                messages_for_api.append({"role": m.role, "content": [{"text": m.content}]})
+                messages_for_api.append(
+                    {"role": m.role, "content": [{"text": m.content}]}
+                )
 
         # -*- Build request body
         request_body = {
@@ -111,7 +122,9 @@ class Claude(AwsBedrock):
         content = message.get("content", [])
 
         if isinstance(content, list):
-            text_content = "\n".join([item.get("text", "") for item in content if isinstance(item, dict)])
+            text_content = "\n".join(
+                [item.get("text", "") for item in content if isinstance(item, dict)]
+            )
         elif isinstance(content, dict):
             text_content = content.get("text", "")
         elif isinstance(content, str):
@@ -122,6 +135,53 @@ class Claude(AwsBedrock):
         return Message(role=role, content=text_content)
 
     def parse_response_delta(self, response: Dict[str, Any]) -> Optional[str]:
-        if "delta" in response:
-            return response.get("delta", {}).get("text")
-        return response.get("completion")
+        logger.debug("Received stream response, starting to process chunks")
+
+        stop_reason = ""
+
+        message = {}
+        content = []
+        message["content"] = content
+        text = ""
+        tool_use = {}
+
+        # stream the response into a message.
+        for chunk in response["stream"]:
+            logger.debug(f"Processing chunk: {chunk}")
+            if "messageStart" in chunk:
+                message["role"] = chunk["messageStart"]["role"]
+                logger.debug(f"Message start. Role: {message['role']}")
+            elif "contentBlockStart" in chunk:
+                tool = chunk["contentBlockStart"]["start"]["toolUse"]
+                tool_use["toolUseId"] = tool["toolUseId"]
+                tool_use["name"] = tool["name"]
+                logger.debug(f"Content block start. Tool: {tool_use}")
+            elif "contentBlockDelta" in chunk:
+                delta = chunk["contentBlockDelta"]["delta"]
+                if "toolUse" in delta:
+                    if "input" not in tool_use:
+                        tool_use["input"] = ""
+                    tool_use["input"] += delta["toolUse"]["input"]
+                    logger.debug(f"Tool use delta. Current input: {tool_use['input']}")
+                elif "text" in delta:
+                    text += delta["text"]
+                    print(delta["text"], end="")
+                    logger.debug(f"Text delta. Current text: {text}")
+            elif "contentBlockStop" in chunk:
+                logger.debug("Content block stop")
+                if "input" in tool_use:
+                    tool_use["input"] = json.loads(tool_use["input"])
+                    content.append({"toolUse": tool_use})
+                    logger.debug(f"Appended tool use to content: {tool_use}")
+                    tool_use = {}
+                else:
+                    content.append({"text": text})
+                    logger.debug(f"Appended text to content: {text}")
+                    text = ""
+            elif "messageStop" in chunk:
+                stop_reason = chunk["messageStop"]["stopReason"]
+                logger.debug(f"Message stop. Reason: {stop_reason}")
+
+        logger.debug(f"Finished processing stream. Final message: {message}")
+        logger.debug(f"Stop reason: {stop_reason}")
+        return {"stop_reason": stop_reason, "message": message}
