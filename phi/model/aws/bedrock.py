@@ -282,6 +282,8 @@ class AwsBedrock(Model):
             messages (List[Message]): The list of conversation messages.
             assistant_message (Message): The assistant's message containing tool calls.
             model_response (ModelResponse): The model's response to be updated.
+            stream (bool): Whether to stream the tool calls.
+            sys_prompt (Optional[str]): The system prompt to be used.
 
         Returns:
             ModelResponse: The updated model response after handling tool calls.
@@ -326,7 +328,7 @@ class AwsBedrock(Model):
 
         # Get new response after tool calls
         if not stream:
-            response_after_tool_calls = self.response(messages=messages, sys_prompt=sys_prompt)
+            response_after_tool_calls = self.response(messages=messages)
             if response_after_tool_calls.content:
                 model_response.content += response_after_tool_calls.content
             return model_response
@@ -454,7 +456,7 @@ class AwsBedrock(Model):
         # handle the tool calls and return the updated model response
         if assistant_message.tool_calls and self.run_tools:
             logger.debug(f"Assistant message has tool calls: {assistant_message}")
-            return self.handle_tool_calls(messages, assistant_message, model_response)
+            return self.handle_tool_calls(messages, assistant_message, model_response, stream=False, sys_prompt=sys_prompt)
 
         # If the assistant's message contains content, set it as the content of the model response
         if assistant_message.content is not None:
@@ -467,6 +469,48 @@ class AwsBedrock(Model):
         # Return the final model response to the caller
         return model_response
 
+    def create_final_message(self, messages: List[Message]) -> List[Dict[str, Any]]:
+        # Send the messages to the model to get the final response
+        final_messages = []
+        # skipping the first message because it is the system prompt
+        for i in messages[1:]:
+            roles = i.role
+            content = i.content
+            if isinstance(content, list) and all(isinstance(item, dict) and 'text' in item for item in content):
+                # Content is already in the desired format
+                pass
+            elif isinstance(content, str):
+                try:
+                    # Try to parse the content as JSON
+                    parsed_content = json.loads(content)
+                    if isinstance(parsed_content, list):
+                        # Handle list of parsed items
+                        new_content = []
+                        for item in parsed_content:
+                            if isinstance(item, dict) and 'content' in item:
+                                # If 'content' is a JSON string, parse it
+                                inner_content = item['content']
+                                try:
+                                    inner_parsed_content = json.loads(inner_content)
+                                    if isinstance(inner_parsed_content, list):
+                                        for inner_item in inner_parsed_content:
+                                            new_content.append({'text': json.dumps(inner_item)})
+                                    else:
+                                        new_content.append({'text': str(inner_parsed_content)})
+                                except json.JSONDecodeError:
+                                    new_content.append({'text': inner_content})
+                            else:
+                                new_content.append({'text': str(item)})
+                        content = new_content
+                    else:
+                        content = [{"text": str(parsed_content)}]
+                except json.JSONDecodeError:
+                    content = [{"text": content}]
+            else:
+                content = [{"text": str(content)}]
+            final_messages.append({"role": roles, "content": content})        
+        return final_messages
+    
     def create_message_from_stream_result(self, response: Dict[str, Any]) -> Message:
         """
         Processes the response from the model and creates an assistant message.
@@ -644,51 +688,12 @@ class AwsBedrock(Model):
         messages.append(assistant_message)
 
         # Check if the stop reason is tool use, if so handle tool calls (run tools and add results to message)
-        if stop_reason == "tool_use":
+        if assistant_message.tool_calls and self.run_tools and stop_reason == "tool_use":
            # This will update Messages with the tool call results
            self.handle_tool_calls(messages, assistant_message, model_response, stream=True, sys_prompt=sys_prompt)
 
-        logger.debug(f"Streaming final response from the model")
-        logger.debug(f"Messages: {messages}")
-        # Send the messages to the model to get the final response
-        final_messages = []
-        # skipping the first message because it is the system prompt
-        for i in messages[1:]:
-            roles = i.role
-            content = i.content
-            if isinstance(content, list) and all(isinstance(item, dict) and 'text' in item for item in content):
-                # Content is already in the desired format
-                pass
-            elif isinstance(content, str):
-                try:
-                    # Try to parse the content as JSON
-                    parsed_content = json.loads(content)
-                    if isinstance(parsed_content, list):
-                        # Handle list of parsed items
-                        new_content = []
-                        for item in parsed_content:
-                            if isinstance(item, dict) and 'content' in item:
-                                # If 'content' is a JSON string, parse it
-                                inner_content = item['content']
-                                try:
-                                    inner_parsed_content = json.loads(inner_content)
-                                    if isinstance(inner_parsed_content, list):
-                                        for inner_item in inner_parsed_content:
-                                            new_content.append({'text': json.dumps(inner_item)})
-                                    else:
-                                        new_content.append({'text': str(inner_parsed_content)})
-                                except json.JSONDecodeError:
-                                    new_content.append({'text': inner_content})
-                            else:
-                                new_content.append({'text': str(item)})
-                        content = new_content
-                    else:
-                        content = [{"text": str(parsed_content)}]
-                except json.JSONDecodeError:
-                    content = [{"text": content}]
-            else:
-                content = [{"text": str(content)}]
-            final_messages.append({"role": roles, "content": content})
+        # create the final messages to send to the model
+        final_messages = self.create_final_message(messages)
 
         # Stream the final messages from the model
         logger.debug(f"Final messages: {final_messages}")
@@ -714,4 +719,9 @@ class AwsBedrock(Model):
         assistant_message.log()
         messages.append(assistant_message)
 
-        yield model_response
+        logger.debug(f"Final messages: {messages}")
+
+        if assistant_message.content is not None:
+            model_response.content = assistant_message.get_content_string()       
+
+        yield from self.response_stream(messages=messages)
