@@ -466,7 +466,7 @@ class Agent:
 
         self.metadata = metadata
 
-        self.tools = tools
+        self.tools = list(tools) if tools else []
         self.tool_call_limit = tool_call_limit
         self.tool_choice = tool_choice
         self.tool_hooks = tool_hooks
@@ -682,7 +682,7 @@ class Agent:
         self._rebuild_tools = True
 
     def set_tools(self, tools: Sequence[Union[Toolkit, Callable, Function, Dict]]):
-        self.tools = tools
+        self.tools = list(tools) if tools else []
         self._rebuild_tools = True
 
     def _initialize_session(
@@ -3125,7 +3125,8 @@ class Agent:
         """Calculate session metrics"""
         session_metrics = self._get_session_metrics(session=session)
         # Add the metrics for the current run to the session metrics
-        session_metrics += run_response.metrics
+        if run_response.metrics is not None:
+            session_metrics += run_response.metrics
         session_metrics.time_to_first_token = None
         if session.session_data is not None:
             session.session_data["session_metrics"] = session_metrics
@@ -4948,7 +4949,7 @@ class Agent:
         # 1. If build_user_context is False or message is a list, return the message as is.
         if not self.build_user_context:
             return Message(
-                role=self.user_message_role,
+                role=self.user_message_role or "user",
                 content=input,
                 images=None if not self.send_media_to_model else images,
                 audio=None if not self.send_media_to_model else audio,
@@ -4961,7 +4962,7 @@ class Agent:
             # If we have any media, return a message with empty content
             if images is not None or audio is not None or videos is not None or files is not None:
                 return Message(
-                    role=self.user_message_role,
+                    role=self.user_message_role or "user",
                     content="",
                     images=None if not self.send_media_to_model else images,
                     audio=None if not self.send_media_to_model else audio,
