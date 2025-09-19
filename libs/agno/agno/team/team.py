@@ -4607,9 +4607,16 @@ class Team:
         if add_history_to_context:
             from copy import deepcopy
 
+            # Only skip messages from history when system_message_role is NOT a standard conversation role.
+            # Standard conversation roles ("user", "assistant", "tool") should never be filtered
+            # to preserve conversation continuity.
+            skip_role = (
+                self.system_message_role if self.system_message_role not in ["user", "assistant", "tool"] else None
+            )
+
             history = session.get_messages_from_last_n_runs(
                 last_n=self.num_history_runs,
-                skip_role=self.system_message_role,
+                skip_role=skip_role,
                 team_id=self.id,
             )
 
@@ -5130,9 +5137,14 @@ class Team:
         member_agent_id = member_agent.id if isinstance(member_agent, Agent) else None
         member_team_id = member_agent.id if isinstance(member_agent, Team) else None
 
+        # Only skip messages from history when system_message_role is NOT a standard conversation role.
+        # Standard conversation roles ("user", "assistant", "tool") should never be filtered
+        # to preserve conversation continuity.
+        skip_role = self.system_message_role if self.system_message_role not in ["user", "assistant", "tool"] else None
+
         history = session.get_messages_from_last_n_runs(
             last_n=member_agent.num_history_runs or self.num_history_runs,
-            skip_role=self.system_message_role,
+            skip_role=skip_role,
             agent_id=member_agent_id,
             team_id=member_team_id,
             member_runs=True,
