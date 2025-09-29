@@ -55,7 +55,7 @@ agent_os = AgentOS(
 app = agent_os.get_app()
 
 # Add JWT middleware to the app
-# This middleware will automatically inject JWT values into endpoint parameters
+# This middleware will automatically inject JWT values into request.state and is used in the relevant endpoints.
 app.add_middleware(
     JWTMiddleware,
     secret_key=JWT_SECRET,
@@ -71,12 +71,6 @@ app.add_middleware(
 if __name__ == "__main__":
     """
     Run your AgentOS with JWT parameter injection.
-    
-    The middleware will automatically inject user_id and session_id from the JWT token
-    into endpoint parameters when:
-    1. The endpoint accepts these parameters (e.g., /agents/{agent_id}/runs)
-    2. The JWT contains the corresponding claims
-    3. The parameters are not already provided in the request
     
     Test by calling /agents/user-agent/runs with a message: "What do you know about me?"
     """

@@ -1,4 +1,5 @@
 import fnmatch
+from os import getenv
 from enum import Enum
 from typing import List, Optional
 
@@ -36,6 +37,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
     - request.state.user_id: User ID from configured claim
     - request.state.session_id: Session ID from configured claim
     - request.state.dependencies: Dictionary of dependency claims
+    - request.state.session_state: Dictionary of session state claims
     - request.state.authenticated: Boolean authentication status
 
     """
@@ -43,7 +45,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        secret_key: str,
+        secret_key: Optional[str] = None,
         algorithm: str = "HS256",
         token_source: TokenSource = TokenSource.HEADER,
         token_header_key: str = "Authorization",
@@ -61,7 +63,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
         Args:
             app: The FastAPI app instance
-            secret_key: The secret key to use for JWT validation
+            secret_key: The secret key to use for JWT validation (optional, will use JWT_SECRET_KEY environment variable if not provided)
             algorithm: The algorithm to use for JWT validation
             token_header_key: The key to use for the Authorization header (only used when token_source is header)
             token_source: Where to extract the JWT token from (header, cookie, or both)
@@ -75,7 +77,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
             session_state_claims: A list of claims to extract from the JWT token for session state
         """
         super().__init__(app)
-        self.secret_key = secret_key
+        self.secret_key = secret_key or getenv("JWT_SECRET_KEY")
         self.algorithm = algorithm
         self.token_header_key = token_header_key
         self.token_source = token_source
