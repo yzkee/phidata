@@ -1,7 +1,8 @@
+from typing import List
+
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from pydantic import BaseModel
-from typing import List
 
 
 class SupportTicketClassification(BaseModel):
@@ -9,6 +10,7 @@ class SupportTicketClassification(BaseModel):
     priority: str
     tags: List[str]
     summary: str
+
 
 triage_agent = Agent(
     name="Ticket Classifier",
