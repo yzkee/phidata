@@ -15,15 +15,12 @@ def get_weather(city: Literal["nyc", "sf"]):
         return "It's always sunny in sf"
 
 
-tools = [get_weather]
-
-
 def instantiate_agent():
-    return Agent(model=OpenAIChat(id="gpt-4o"), tools=tools)  # type: ignore
+    return Agent(model=OpenAIChat(id="gpt-4o"), tools=[get_weather])  # type: ignore
 
 
 instantiation_perf = PerformanceEval(
-    name="Tool Instantiation Performance", func=instantiate_agent, num_iterations=1000
+    name="Agent Instantiation", func=instantiate_agent, num_iterations=1000
 )
 
 if __name__ == "__main__":
