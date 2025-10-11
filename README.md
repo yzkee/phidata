@@ -14,30 +14,52 @@
   <a href="https://github.com/agno-agi/agno/stargazers">🌟 Star Us</a>
 </div>
 
-## What is Agno?
+<b>[Agno](https://docs.agno.com) is a high-performance framework and runtime for multi-agent systems. Use it to build, run and manage multi-agent systems in your cloud.</b>
 
-[Agno](https://docs.agno.com) is a high-performance SDK and runtime for multi-agent systems. Use it to build, run and manage multi-agent systems in your cloud.
+Agno is the fastest python framework for building agents with memory, knowledge, session management, human in the loop and best-in-class MCP support.
 
-Agno is the fastest framework for building agents with built-in memory, knowledge, session management, human in the loop and best-in-class MCP support. You can put agents together as multi-agent teams or step-based agentic workflows.
+You can put agents together as multi-agent teams or step-based agentic workflows.
 
-In 10 lines of code, we can build an Agent that uses tools to achieve a task.
+Here’s an example of an Agent that connects to any MCP server, manages conversation history and state in a database, and is served using a FastAPI application that you deploy to your cloud.
 
-```python hackernews_agent.py
+```python agno_agent.py
 from agno.agent import Agent
+from agno.db.sqlite import SqliteDb
 from agno.models.anthropic import Claude
-from agno.tools.hackernews import HackerNewsTools
+from agno.os import AgentOS
+from agno.tools.mcp import MCPTools
 
-agent = Agent(
+# ************* Create Agent *************
+agno_agent = Agent(
+    name="Agno Agent",
     model=Claude(id="claude-sonnet-4-5"),
-    tools=[HackerNewsTools()],
+    # Add a database to the Agent
+    db=SqliteDb(db_file="agno.db"),
+    # Add the Agno MCP server to the Agent
+    tools=[MCPTools(transport="streamable-http", url="https://docs.agno.com/mcp")],
+    # Add the previous session history to the context
+    add_history_to_context=True,
     markdown=True,
 )
-agent.print_response("Write a report on trending startups and products.", stream=True)
+
+
+# ************* Create AgentOS *************
+agent_os = AgentOS(agents=[agno_agent])
+# Get the FastAPI app for the AgentOS
+app = agent_os.get_app()
+
+# ************* Run AgentOS *************
+if __name__ == "__main__":
+    agent_os.serve(app="agno_agent:app", reload=True)
 ```
 
-But the real advantage of Agno is its [AgentOS](https://docs.agno.com/agent-os/introduction) runtime:
+You can also connect to this application using the [AgentOS UI](https://os.agno.com) which looks like this:
 
-1. You get a pre-built FastAPI app for serving your agents, teams and workflows, meaning you start building your AI product on day one. This is a remarkable advantage over other solutions.
+---
+
+The real advantage of Agno is its [AgentOS](https://docs.agno.com/agent-os/introduction) runtime:
+
+1. You get a pre-built FastAPI app for running your agents, teams and workflows, meaning you start building your AI product on day one. This is a remarkable advantage over other solutions.
 2. You also get a UI that connects directly to the pre-built FastAPI app. Use it to test, monitor and manage your system. This gives you unmatched visibility and control.
 3. Your AgentOS runs in your cloud and you get complete privacy because no data ever leaves your system. This is incredible for security conscious enterprises that can't send data to external services.
 
