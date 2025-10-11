@@ -1,11 +1,12 @@
 <div align="center" id="top">
-  <a href="https://docs.agno.com">
+  <a href="https://agno.com">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://agno-public.s3.us-east-1.amazonaws.com/assets/logo-dark.svg">
       <source media="(prefers-color-scheme: light)" srcset="https://agno-public.s3.us-east-1.amazonaws.com/assets/logo-light.svg">
       <img src="https://agno-public.s3.us-east-1.amazonaws.com/assets/logo-light.svg" alt="Agno">
     </picture>
   </a>
+  A high-performance framework and runtime for multi-agent systems.
 </div>
 <div align="center">
   <a href="https://docs.agno.com">📚 Documentation</a> &nbsp;|&nbsp;
@@ -13,11 +14,7 @@
   <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github&utm_content=header">🏠 Website</a>
 </div>
 
----
-
-<a href="https://agno.com">Agno</a> is a high-performance framework and runtime for multi-agent systems. Use it to build, run and manage multi-agent systems in your cloud.
-
----
+## What is Agno?
 
 Agno is the fastest python framework for building agents with memory, knowledge, session management, human in the loop and MCP support. You can put agents together as multi-agent teams or step-based agentic workflows.
 
