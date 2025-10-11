@@ -20,7 +20,7 @@
 
 Agno is the fastest python framework for building agents with memory, knowledge, session management, human in the loop and MCP support. You can put agents together as multi-agent teams or step-based agentic workflows.
 
-Here’s an example of an Agent that connects to any MCP server, manages conversation history and state in a database, and is served using a FastAPI application that you can connect to the [AgentOS UI](https://os.agno.com).
+Here’s an example of an Agent that connects to any MCP server, manages conversation history and state in a database, and is served using a FastAPI application that you can connect to using the [AgentOS UI](https://os.agno.com).
 
 ```python agno_agent.py
 from agno.agent import Agent
@@ -65,8 +65,6 @@ https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
 
 For organizations building agents, Agno provides the complete solution. You get the fastest framework for building agents (speed of development and execution), a pre-built FastAPI app that get you building product on day one, and a control plane for managing your system.
 
-We bring a novel architecture that no other framework provides, your AgentOS runs securely in your cloud, and the control plane connects directly to it from your browser. You don't need to send data to any external services or pay retention costs, you get complete privacy and control.
-
 ## Getting started
 
 If you're new to Agno, follow our [quickstart](https://docs.agno.com/introduction/quickstart) to build your first Agent and run it using the AgentOS.
@@ -82,9 +80,7 @@ After that, checkout the [examples gallery](https://docs.agno.com/examples/intro
 
 ## Setup Your Coding Agent to Use Agno
 
-For LLMs and AI assistants to understand and navigate Agno's documentation, we provide an [llms.txt](https://docs.agno.com/llms.txt) or [llms-full.txt](https://docs.agno.com/llms-full.txt) file.
-
-This file is built for AI systems to efficiently parse and reference our documentation.
+For LLMs and AI assistants to understand and navigate Agno's documentation, we provide an [llms.txt](https://docs.agno.com/llms.txt) or [llms-full.txt](https://docs.agno.com/llms-full.txt) file. This file is built for AI systems to efficiently parse and reference our documentation.
 
 ### IDE Integration
 
