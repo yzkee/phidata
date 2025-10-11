@@ -20,7 +20,7 @@
 
 Agno is the fastest python framework for building agents with memory, knowledge, session management, human in the loop and MCP support. You can put agents together as multi-agent teams or step-based agentic workflows.
 
-Here’s an example of an Agent that connects to any MCP server, manages conversation history and state in a database, and is served using a FastAPI application that you can connect to using the [AgentOS UI](https://os.agno.com).
+Here’s an example of an Agent that connects to any MCP server, manages conversation history in a database, and is served using a FastAPI application that you can connect to using the [AgentOS UI](https://os.agno.com).
 
 ```python agno_agent.py
 from agno.agent import Agent
@@ -141,7 +141,6 @@ python cookbook/evals/performance/comparison/pydantic_ai_instantiation.py
 ```
 
 LangGraph is on the right, **let's start it first and give it a head start**. Then CrewAI and Pydantic AI follow, and finally Agno. Agno obviously finishes first, but let's see by how much.
-
 
 https://github.com/user-attachments/assets/54b98576-1859-4880-9f2d-15e1a426719d
 
