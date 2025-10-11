@@ -6,6 +6,8 @@
       <img src="https://agno-public.s3.us-east-1.amazonaws.com/assets/logo-light.svg" alt="Agno">
     </picture>
   </a>
+</div>
+<div align="center">
   A high-performance framework and runtime for multi-agent systems.
 </div>
 <div align="center">
