@@ -53,7 +53,7 @@ if __name__ == "__main__":
     agent_os.serve(app="agno_agent:app", reload=True)
 ```
 
-The real advantage of Agno is its [AgentOS](https://docs.agno.com/agent-os/introduction) runtime:
+Agno's real advantage is its [AgentOS](https://docs.agno.com/agent-os/introduction) runtime:
 
 1. You get a pre-built FastAPI app for running your agents, teams and workflows, meaning you start building your AI product on day one. This is a remarkable advantage over other solutions.
 2. You also get a UI that connects directly to the pre-built FastAPI app. Use it to test, monitor and manage your system. This gives you unmatched visibility and control.
