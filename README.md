@@ -10,7 +10,7 @@
 <div align="center">
   <a href="https://docs.agno.com">📚 Documentation</a> &nbsp;|&nbsp;
   <a href="https://docs.agno.com/examples/introduction">💡 Examples</a> &nbsp;|&nbsp;
-  <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github&utm_content=header">🏠 Website</a> &nbsp;|&nbsp;
+  <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github&utm_content=header">🏠 Website</a>
 </div>
 
 ## What is Agno?
