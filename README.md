@@ -63,6 +63,9 @@ The real advantage of Agno is its [AgentOS](https://docs.agno.com/agent-os/intro
 
 Here's how the AgentOS UI looks like:
 
+https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
+
+
 For organizations building agents, Agno provides the complete solution. You get the fastest framework for building agents (speed of development and execution), a pre-built FastAPI app that get you building product on day one, and a control plane for managing your system.
 
 We bring a novel architecture that no other framework provides, your AgentOS runs securely in your cloud, and the control plane connects directly to it from your browser. You don't need to send data to any external services or pay retention costs, you get complete privacy and control.
