@@ -61,7 +61,7 @@ The real advantage of Agno is its [AgentOS](https://docs.agno.com/agent-os/intro
 
 Here's how the AgentOS UI looks like:
 
-https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
+![AgentOS UI](https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6)
 
 For organizations building agents, Agno provides the complete solution. You get the fastest framework for building agents (speed of development and execution), a pre-built FastAPI app that get you building product on day one, and a control plane for managing your system.
 
@@ -95,42 +95,64 @@ Now, Cursor will have access to the Agno documentation. You can do the same with
 
 ## Performance
 
-At Agno, we're obsessed with performance. Why? because even simple AI workflows can spawn thousands of Agents. Scale that to a modest number of users and performance becomes a bottleneck. Agno is designed for building highly performant agentic systems:
+If you're building with Agno, you're guaranteed best-in-class performance by default. Our obsession with performance is necessary because even simple AI workflows can spawn hundreds of Agents and because many tasks are long-running -- stateless, horizontal scalability is key for success.
 
-- Agent instantiation: ~3μs on average
-- Memory footprint: ~6.5Kib on average
+At Agno, we optimize performance across 3 dimensions:
 
-> Tested on an Apple M4 MacBook Pro.
+1. **Agent performance:** We optimize static operations (instantiation, memory footprint) and runtime operations (tool calls, memory updates, history management).
+2. **System performance:** The AgentOS API is async by default and has a minimal memory footprint. The system is stateless and horizontally scalable, with a focus on preventing memory leaks. It handles parallel and batch embedding generation during knowledge ingestion, metrics collection in background tasks, and other system-level optimizations.
+3. **Agent reliability and accuracy:** Monitored through evals, which we’ll explore later.
 
-While an Agent's run-time is bottlenecked by inference, we must do everything possible to minimize execution time, reduce memory usage, and parallelize tool calls. These numbers may seem trivial at first, but our experience shows that they add up even at a reasonably small scale.
+### Agent Performance
+
+Let's measure the time it takes to instantiate an Agent and the memory footprint of an Agent. Here are the numbers:
+
+> Last measured in Oct 2025, on an Apple M4 MacBook Pro.
+
+- **Agent instantiation:** ~3μs on average
+- **Memory footprint:** ~6.6Kib on average
+
+We'll show below that Agno Agents instantiate **529× faster than Langgraph**, **57× faster than PydanticAI**, and **70× faster than CrewAI**. Agno Agents also use **24× lower memory than Langgraph**, **4× lower than PydanticAI**, and **10× lower than CrewAI**.
+
+<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;"
+
+Run time performance is bottlenecked by inference and hard to benchmark accurately, so we focus on minimizing overhead, reducing memory usage, and parallelizing tool calls.
+
+</div>
 
 ### Instantiation Time
 
-Let's measure the time it takes for an Agent with 1 tool to start up. We'll run the evaluation 1000 times to get a baseline measurement.
+Let's measure instantiation time for an Agent with 1 tool. We'll run the evaluation 1000 times to get a baseline measurement. We'll compare Agno to LangGraph, CrewAI and Pydantic AI.
 
-You should run the evaluation yourself on your own machine, please, do not take these results at face value.
+<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;">
+
+The code for this benchmark is available [here](https://github.com/agno-agi/agno/tree/main/cookbook/evals/performance). You should run the evaluation yourself on your own machine, please, do not take these results at face value.
+
+</div>
 
 ```shell
 # Setup virtual environment
 ./scripts/perf_setup.sh
 source .venvs/perfenv/bin/activate
-# OR Install dependencies manually
-# pip install openai agno langgraph langchain_openai
 
 # Agno
 python cookbook/evals/performance/instantiate_agent_with_tool.py
 
 # LangGraph
 python cookbook/evals/performance/comparison/langgraph_instantiation.py
+# CrewAI
+python cookbook/evals/performance/comparison/crewai_instantiation.py
+# Pydantic AI
+python cookbook/evals/performance/comparison/pydantic_ai_instantiation.py
 ```
 
-> The following evaluation is run on an Apple M4 MacBook Pro. It also runs as a Github action on this repo.
+LangGraph is on the right, **let's start it first and give it a head start**. Then CrewAI and Pydantic AI follow, and finally Agno. Agno obviously finishes first, but let's see by how much.
 
-LangGraph is on the right, **let's start it first and give it a head start**.
+<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;">
 
-Agno is on the left, notice how it finishes before LangGraph gets 1/2 way through the runtime measurement, and hasn't even started the memory measurement. That's how fast Agno is.
+![Agno Performance](https://github.com/user-attachments/assets/ba466d45-75dd-45ac-917b-0a56c5742e23)
 
-https://github.com/user-attachments/assets/ba466d45-75dd-45ac-917b-0a56c5742e23
+</div>
 
 ### Memory Usage
 
@@ -138,11 +160,27 @@ To measure memory usage, we use the `tracemalloc` library. We first calculate a 
 
 We recommend running the evaluation yourself on your own machine, and digging into the code to see how it works. If we've made a mistake, please let us know.
 
-### Conclusion
+### Results
 
-Agno agents are designed for performance and while we do share some benchmarks against other frameworks, we should be mindful that accuracy and reliability are more important than speed.
+Taking Agno as the baseline, we can see that:
 
-Given that each framework is different and we won't be able to tune their performance like we do with Agno, for future benchmarks we'll only be comparing against ourselves.
+| Metric             | Agno | Langgraph   | PydanticAI | CrewAI     |
+| ------------------ | ---- | ----------- | ---------- | ---------- |
+| **Time (seconds)** | 1×   | 529× slower | 57× slower | 70× slower |
+| **Memory (MiB)**   | 1×   | 24× higher  | 4× higher  | 10× higher |
+
+Exact numbers from the benchmark:
+
+| Metric             | Agno     | Langgraph | PydanticAI | CrewAI   |
+| ------------------ | -------- | --------- | ---------- | -------- |
+| **Time (seconds)** | 0.000003 | 0.001587  | 0.000170   | 0.000210 |
+| **Memory (MiB)**   | 0.006642 | 0.161435  | 0.028712   | 0.065652 |
+
+<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;">
+
+Agno agents are designed for performance and while we share benchmarks against other frameworks, we should be mindful that accuracy and reliability are more important than speed.
+
+</div>
 
 ## Contributions
 
