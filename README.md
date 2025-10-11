@@ -13,13 +13,9 @@
   <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github&utm_content=header">🏠 Website</a>
 </div>
 
-<br>
-
-<div align="center">
+---
 
 <a href="https://agno.com">Agno</a> is a high-performance framework and runtime for multi-agent systems. Use it to build, run and manage multi-agent systems in your cloud.
-
-</div>
 
 ---
 
