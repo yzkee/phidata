@@ -61,7 +61,7 @@ The real advantage of Agno is its [AgentOS](https://docs.agno.com/agent-os/intro
 
 Here's how the AgentOS UI looks like:
 
-![AgentOS UI](https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6)
+https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
 
 For organizations building agents, Agno provides the complete solution. You get the fastest framework for building agents (speed of development and execution), a pre-built FastAPI app that get you building product on day one, and a control plane for managing your system.
 
@@ -114,21 +114,15 @@ Let's measure the time it takes to instantiate an Agent and the memory footprint
 
 We'll show below that Agno Agents instantiate **529× faster than Langgraph**, **57× faster than PydanticAI**, and **70× faster than CrewAI**. Agno Agents also use **24× lower memory than Langgraph**, **4× lower than PydanticAI**, and **10× lower than CrewAI**.
 
-<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;"
-
-Run time performance is bottlenecked by inference and hard to benchmark accurately, so we focus on minimizing overhead, reducing memory usage, and parallelizing tool calls.
-
-</div>
+> [!NOTE]
+> Run time performance is bottlenecked by inference and hard to benchmark accurately, so we focus on minimizing overhead, reducing memory usage, and parallelizing tool calls.
 
 ### Instantiation Time
 
 Let's measure instantiation time for an Agent with 1 tool. We'll run the evaluation 1000 times to get a baseline measurement. We'll compare Agno to LangGraph, CrewAI and Pydantic AI.
 
-<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;">
-
-The code for this benchmark is available [here](https://github.com/agno-agi/agno/tree/main/cookbook/evals/performance). You should run the evaluation yourself on your own machine, please, do not take these results at face value.
-
-</div>
+> [!NOTE]
+> The code for this benchmark is available [here](https://github.com/agno-agi/agno/tree/main/cookbook/evals/performance). You should run the evaluation yourself on your own machine, please, do not take these results at face value.
 
 ```shell
 # Setup virtual environment
@@ -148,11 +142,8 @@ python cookbook/evals/performance/comparison/pydantic_ai_instantiation.py
 
 LangGraph is on the right, **let's start it first and give it a head start**. Then CrewAI and Pydantic AI follow, and finally Agno. Agno obviously finishes first, but let's see by how much.
 
-<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;">
 
-![Agno Performance](https://github.com/user-attachments/assets/ba466d45-75dd-45ac-917b-0a56c5742e23)
-
-</div>
+https://github.com/user-attachments/assets/54b98576-1859-4880-9f2d-15e1a426719d
 
 ### Memory Usage
 
@@ -176,11 +167,8 @@ Exact numbers from the benchmark:
 | **Time (seconds)** | 0.000003 | 0.001587  | 0.000170   | 0.000210 |
 | **Memory (MiB)**   | 0.006642 | 0.161435  | 0.028712   | 0.065652 |
 
-<div style="padding: 12px 16px; background-color: #f0f8ff; border-left: 4px solid #007acc; border-radius: 6px;">
-
-Agno agents are designed for performance and while we share benchmarks against other frameworks, we should be mindful that accuracy and reliability are more important than speed.
-
-</div>
+> [!NOTE]
+> Agno agents are designed for performance and while we share benchmarks against other frameworks, we should be mindful that accuracy and reliability are more important than speed.
 
 ## Contributions
 
