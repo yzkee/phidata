@@ -105,9 +105,7 @@ At Agno, we optimize performance across 3 dimensions:
 
 ### Agent Performance
 
-Let's measure the time it takes to instantiate an Agent and the memory footprint of an Agent. Here are the numbers:
-
-> Last measured in Oct 2025, on an Apple M4 MacBook Pro.
+Let's measure the time it takes to instantiate an Agent and the memory footprint of an Agent. Here are the numbers (last measured in Oct 2025, on an Apple M4 MacBook Pro):
 
 - **Agent instantiation:** ~3μs on average
 - **Memory footprint:** ~6.6Kib on average
