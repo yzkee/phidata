@@ -13,7 +13,7 @@
   <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github&utm_content=header">🏠 Website</a>
 </div>
 
-## What is Agno?
+---
 
 </b>[Agno](https://docs.agno.com) is a high-performance framework and runtime for multi-agent systems. Use it to build, run and manage multi-agent systems in your cloud.</b>
 
