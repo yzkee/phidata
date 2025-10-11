@@ -15,7 +15,9 @@
 
 ---
 
-</b>[Agno](https://docs.agno.com) is a high-performance framework and runtime for multi-agent systems. Use it to build, run and manage multi-agent systems in your cloud.</b>
+<div align="center">
+[Agno](https://docs.agno.com) is a high-performance framework and runtime for multi-agent systems. Use it to build, run and manage multi-agent systems in your cloud.
+</div>
 
 ---
 
