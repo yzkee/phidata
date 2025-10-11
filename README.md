@@ -8,7 +8,7 @@
   </a>
 </div>
 <div align="center">
-  A high-performance framework and runtime for multi-agent systems.
+  <h3>A high-performance framework and runtime for multi-agent systems</h3>
 </div>
 <div align="center">
   <a href="https://docs.agno.com">📚 Documentation</a> &nbsp;|&nbsp;
