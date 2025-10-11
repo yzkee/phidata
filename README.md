@@ -63,7 +63,7 @@ Here's how the [AgentOS UI](https://os.agno.com) looks like:
 
 https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
 
-For organizations building agents, Agno provides the complete solution. You get the fastest framework for building agents (speed of development and execution), a pre-built FastAPI app that get you building product on day one, and a control plane for managing your system.
+For organizations building agents, Agno provides the complete solution. You get the fastest framework for building agents (speed of development and execution), a pre-built FastAPI app that gets you building product on day one, and a control plane for managing your system.
 
 ## Getting started
 
