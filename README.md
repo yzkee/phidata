@@ -70,12 +70,12 @@ Here's how the [AgentOS UI](https://os.agno.com) looks like:
 
 https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
 
-## The Multi-Agent Framework, Runtime and UI
+## The Complete Agentic Solution
 
 For companies building agents, Agno provides the complete solution:
 
-- You get the fastest framework for building agents, multi-agent teams and agentic workflows.
-- A ready-to-use FastAPI app that gets you building your product on day one (AgentOS Runtime).
+- The fastest framework for building agents, multi-agent teams and agentic workflows (Agno Framework).
+- A ready-to-use FastAPI app that gets you building AI products on day one (AgentOS Runtime).
 - A control plane for testing, monitoring and managing your system (AgentOS UI).
 
 ## Getting started
