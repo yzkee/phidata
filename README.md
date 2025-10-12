@@ -8,12 +8,12 @@
   </a>
 </div>
 <div align="center">
-  <h4>High-performance framework and runtime for multi-agent systems</h4>
-</div>
-<div align="center">
   <a href="https://docs.agno.com">📚 Documentation</a> &nbsp;|&nbsp;
   <a href="https://docs.agno.com/examples/introduction">💡 Examples</a> &nbsp;|&nbsp;
   <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github&utm_content=header">🏠 Website</a>
+</div>
+<div align="center">
+  <h4>High-performance framework and runtime for multi-agent systems</h4>
 </div>
 
 ## What is Agno?
@@ -55,11 +55,11 @@ if __name__ == "__main__":
 
 ## What is the AgentOS?
 
-AgentOS is a high-performance runtime for serving multi-agent systems. [Learn more](https://docs.agno.com/agent-os/introduction). Key features:
+AgentOS is a high-performance runtime for serving multi-agent systems [[Learn more](https://docs.agno.com/agent-os/introduction)]. Key features:
 
-1. **Pre-built FastAPI runtime**: AgentOS ships with a ready-to-use FastAPI app for running your agents, teams, and workflows. This gives you a major head start over other solutions.
+1. **Pre-built FastAPI runtime**: AgentOS ships with a ready-to-use FastAPI app for running your agents, teams, and workflows. This gives you a major head start in building your AI product.
 
-2. **Integrated UI**: The [AgentOS UI](https://os.agno.com) connects directly to your runtime, letting you test, monitor, and manage your system in real time. This gives you unmatched visibility and control.
+2. **Integrated UI**: The [AgentOS UI](https://os.agno.com) connects directly to your runtime, letting you test, monitor, and manage your system in real time. This gives you unmatched visibility and control over your system.
 
 3. **Private by design**: AgentOS runs entirely in your cloud, ensuring complete data privacy. No data ever leaves your system. This is ideal for security-conscious enterprises that can't send data to external services.
 
@@ -67,7 +67,11 @@ Here's how the [AgentOS UI](https://os.agno.com) looks like:
 
 https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
 
-For organizations building agents, Agno provides the complete solution. You get the fastest framework for building agents (speed of development and execution), a pre-built FastAPI app that gets you building product on day one, and a control plane for managing your system.
+#### For companies building agents, Agno provides the complete solution:
+
+- You get the fastest framework for building agents (speed of development and execution).
+- A ready-to-use FastAPI app that gets you building product on day one.
+- A control plane for testing, monitoring and managing your system.
 
 ## Getting started
 
