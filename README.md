@@ -16,7 +16,9 @@
 
 ## What is Agno?
 
-Agno is the fastest python framework for building multi-agent systems with memory, knowledge, human in the loop and MCP support. You can orchestrate agents as multi-agent teams (more autonomy) or step-based agentic workflows (more control).
+Agno is an incredibly fast multi-agent framework, runtime and UI.
+
+Use it to build multi-agent systems with memory, knowledge, human in the loop and MCP support. You can orchestrate agents as multi-agent teams (more autonomy) or step-based agentic workflows (more control).
 
 Here’s an example of an Agent that connects to an MCP server, manages conversation state in a database, and is served using a FastAPI application that you can manage using the [AgentOS UI](https://os.agno.com).
 
@@ -53,7 +55,7 @@ if __name__ == "__main__":
 
 ## What is the AgentOS?
 
-AgentOS is a high-performance runtime for orchestrating multi-agent systems ([learn more](https://docs.agno.com/agent-os/introduction)). Key features:
+AgentOS is a high-performance runtime for orchestrating multi-agent systems. Key features include:
 
 1. **Pre-built FastAPI runtime**: AgentOS ships with a ready-to-use FastAPI app for running your agents, teams, and workflows. This gives you a major head start in building your AI product.
 
@@ -65,13 +67,13 @@ Here's how the [AgentOS UI](https://os.agno.com) looks like:
 
 https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
 
-## The complete Agentic solution
+## The Multi-Agent Framework, Runtime and UI
 
 For companies building agents, Agno provides the complete solution:
 
-- You get the fastest framework for building agents (speed of development and execution).
-- A ready-to-use FastAPI app that gets you building product on day one.
-- A control plane for testing, monitoring and managing your system.
+- You get the fastest framework for building agents, multi-agent teams and agentic workflows.
+- A ready-to-use FastAPI app that gets you building your product on day one (AgentOS Runtime).
+- A control plane for testing, monitoring and managing your system (AgentOS UI).
 
 ## Getting started
 
