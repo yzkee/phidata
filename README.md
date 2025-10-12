@@ -14,8 +14,6 @@
   <a href="https://docs.agno.com/examples/introduction">Examples</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github">Website</a>
-  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-  <a href="https://agno.link/discord">Discord</a>
   <br />
 </div>
 
