@@ -23,7 +23,7 @@ Agno is an incredibly fast multi-agent framework, runtime and UI.
 
 Use it to build multi-agent systems with memory, knowledge, human in the loop and MCP support. You can orchestrate agents as multi-agent teams (more autonomy) or step-based agentic workflows (more control).
 
-Here’s an example of an Agent that connects to an MCP server, manages conversation state in a database, and is served using a FastAPI application that you can interact with using the [AgentOS UI](https://os.agno.com).
+Here’s an example of an Agent that connects to an MCP server, manages conversation state in a database, and is served using a FastAPI application that you can manage using the [AgentOS UI](https://os.agno.com).
 
 ```python agno_agent.py
 from agno.agent import Agent
@@ -74,9 +74,9 @@ https://github.com/user-attachments/assets/feb23db8-15cc-4e88-be7c-01a21a03ebf6
 
 For companies building agents, Agno provides the complete solution:
 
-- The fastest framework for building agents, multi-agent teams and agentic workflows (Agno Framework).
-- A ready-to-use FastAPI app that gets you building AI products on day one (AgentOS Runtime).
-- A control plane for testing, monitoring and managing your system (AgentOS UI).
+- The fastest framework for building agents, multi-agent teams and agentic workflows.
+- A ready-to-use FastAPI app that gets you building AI products on day one.
+- A control plane for testing, monitoring and managing your system.
 
 ## Getting started
 
