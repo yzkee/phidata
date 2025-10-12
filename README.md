@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
 ## What is the AgentOS?
 
-AgentOS is a high-performance runtime for serving multi-agent systems [[Learn more](https://docs.agno.com/agent-os/introduction)]. Key features:
+AgentOS is a high-performance runtime for serving multi-agent systems ([learn more](https://docs.agno.com/agent-os/introduction)). Key features:
 
 1. **Pre-built FastAPI runtime**: AgentOS ships with a ready-to-use FastAPI app for running your agents, teams, and workflows. This gives you a major head start in building your AI product.
 
