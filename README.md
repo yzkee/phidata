@@ -18,9 +18,9 @@
 
 ## What is Agno?
 
-Agno is the fastest python framework for building agents with memory, knowledge, human in the loop and MCP support. You can put agents together as multi-agent teams or step-based agentic workflows.
+Agno is the fastest python framework for building agents with memory, knowledge, human in the loop and MCP support. You can orchestrate agents as multi-agent teams (more autonomy) or step-based agentic workflows (more control).
 
-Here’s an example of an Agent that connects to an MCP server, manages conversation history in a database, and is served using a FastAPI application that you can manage using the [AgentOS UI](https://os.agno.com).
+Here’s an example of an Agent that connects to an MCP server, manages conversation state in a database, and is served using a FastAPI application that you can manage using the [AgentOS UI](https://os.agno.com).
 
 ```python agno_agent.py
 from agno.agent import Agent
@@ -53,11 +53,17 @@ if __name__ == "__main__":
     agent_os.serve(app="agno_agent:app", reload=True)
 ```
 
-Agno's real advantage is its [AgentOS](https://docs.agno.com/agent-os/introduction) runtime:
+## What is the AgentOS?
 
-1. You get a pre-built FastAPI app for running your agents, teams and workflows, meaning you start building your AI product on day one. This is a remarkable advantage over other solutions.
-2. You also get a UI that connects directly to the pre-built FastAPI app. Use it to test, monitor and manage your system. This gives you unmatched visibility and control.
-3. Your AgentOS runs in your cloud and you get complete privacy because no data ever leaves your system. This is incredible for security conscious enterprises that can't send data to external services.
+AgentOS is a high-performance runtime for serving a multi-agent system. [Learn more ->](https://docs.agno.com/agent-os/introduction).
+
+Here are the key features:
+
+1. **Pre-built FastAPI runtime**: AgentOS ships with a ready-to-use FastAPI app for running your agents, teams, and workflows — so you can start building your AI product on day one. This offers a major head start over other solutions.
+
+2. **Integrated UI**: The [AgentOS UI](https://os.agno.com) connects directly to your runtime, letting you test, monitor, and manage your system in real time — giving you unmatched visibility and control.
+
+3. **Private by design**: AgentOS runs entirely in your cloud, ensuring complete data privacy. No data ever leaves your system — ideal for security-conscious enterprises that can't send data to external services.
 
 Here's how the [AgentOS UI](https://os.agno.com) looks like:
 
