@@ -18,7 +18,7 @@
 
 ## What is Agno?
 
-Agno is the fastest python framework for building multi-agent systems with memory, knowledge, human in the loop and MCP support. You can orchestrate agents as multi-agent teams (more autonomy) or step-based agentic workflows (more control).
+Agno is the fastest python framework for building agents with memory, knowledge, human in the loop and MCP support. You can orchestrate agents as multi-agent teams (more autonomy) or step-based agentic workflows (more control).
 
 Here’s an example of an Agent that connects to an MCP server, manages conversation state in a database, and is served using a FastAPI application that you can manage using the [AgentOS UI](https://os.agno.com).
 
