@@ -6,14 +6,12 @@
       <img src="https://agno-public.s3.us-east-1.amazonaws.com/assets/logo-light.svg" alt="Agno">
     </picture>
   </a>
+  <h4>High-performance framework and runtime for multi-agent systems</h4>
 </div>
 <div align="center">
   <a href="https://docs.agno.com">📚 Documentation</a> &nbsp;|&nbsp;
   <a href="https://docs.agno.com/examples/introduction">💡 Examples</a> &nbsp;|&nbsp;
   <a href="https://www.agno.com/?utm_source=github&utm_medium=readme&utm_campaign=agno-github&utm_content=header">🏠 Website</a>
-</div>
-<div align="center">
-  <h4>High-performance framework and runtime for multi-agent systems</h4>
 </div>
 
 ## What is Agno?
