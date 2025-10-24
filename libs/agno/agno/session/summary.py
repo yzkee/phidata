@@ -65,7 +65,7 @@ class SessionSummaryManager:
 
     # Prompt used for session summary generation
     session_summary_prompt: Optional[str] = None
-    
+
     # User message prompt for requesting the summary
     summary_request_message: str = "Provide the summary of the conversation."
 

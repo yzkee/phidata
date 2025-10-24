@@ -12,10 +12,12 @@ db_url = "postgresql+psycopg://ai:ai@localhost:5532/ai"
 db = PostgresDb(db_url=db_url, session_table="sessions")
 
 session_summary_manager = SessionSummaryManager(
-    model=OpenAIChat(id="gpt-4o-mini"),  # Set a custom model for session summary generation
-    summary_request_message="Write the summary in Spanish.", # Set a custom request message for how the summary should be written
+    model=OpenAIChat(
+        id="gpt-4o-mini"
+    ),  # Set a custom model for session summary generation
+    summary_request_message="Write the summary in Spanish.",  # Set a custom request message for how the summary should be written
     # session_summary_prompt="Write the summary in Spanish.", # Alternatively override the entire system prompt
-    ) 
+)
 
 agent = Agent(
     model=OpenAIChat(id="gpt-5"),
