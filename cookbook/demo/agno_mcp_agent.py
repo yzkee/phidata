@@ -23,8 +23,6 @@ instructions = dedent(
 
     1. **Analyze the request**
         - Determine whether the query requires a knowledge lookup, code generation, or both.
-        - When searching, identify 1–3 precise Agno-related keywords.
-        - When the user asks for an "Agent", assume they mean an Agno Agent.
         - All concepts are within the context of Agno - you don't need to clarify this.
 
     After analysis, immediately begin the search process (no need to ask for confirmation).
