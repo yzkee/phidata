@@ -1,14 +1,26 @@
 # AgentOS Demo
 
-This cookbook show's how to run a multi-agent system using the AgentOS. It covers the following topics:
+This demo shows how to run a **multi-agent system** using **AgentOS**, the high-performance runtime built into the [Agno](https://agno.com) framework.
 
-- Building Agents, Multi-Agent Teams and Agentic Workflows
-- Running Agents, Teams and Workflows as an API using the AgentOS
-- Connecting to the AgentOS UI
+It includes a set of example Agents and Teams that demonstrate how AgentOS can coordinate specialized agents for tasks like research, analysis, memory management, and data retrieval.
+
+---
+
+## What’s Included
+
+- 🧩 **Agno MCP Agent** — connects to the Agno MCP servers for live context and data
+- 📚 **Agno Knowledge Agent** — searches the Agno documentation for information
+- 🎥 **YouTube Agent** — analyzes YouTube videos and answers questions
+- 💹 **Finance Agent** — retrieves and analyzes stock and market data
+- 🔍 **Research Agent** — performs live research using ExaTools
+- 🧾 **Finance Team** — combines research and finance data into reports to provide a full investment brief
+- 🧠 **Memory Manager** — summarizes and maintains user memories
+
+---
 
 ## Setup
 
-> Note: Fork and clone the repository if needed
+> 💡 **Tip:** Fork and clone the repository first if you plan to modify the demo.
 
 ### 1. Create a virtual environment
 
@@ -17,7 +29,7 @@ uv venv .demoenv --python 3.12
 source .demoenv/bin/activate
 ```
 
-### 2. Install libraries
+### 2. Install dependencies
 
 ```shell
 uv pip install -r cookbook/demo/requirements.txt
@@ -51,6 +63,8 @@ We recommend using claude-sonnet-4-5 for your agents, but you can use any Model 
 
 ```shell
 export ANTHROPIC_API_KEY=***
+export OPENAI_API_KEY=***
+export EXA_API_KEY=***
 ```
 
 ### 5. Run the demo AgentOS
@@ -61,10 +75,14 @@ python cookbook/demo/run.py
 
 ### 6. Connect to the AgentOS UI
 
-Open [os.agno.com](https://os.agno.com/) and connect to http://localhost:7777 to interact with the demo AgentOS.
+- Open the web interface: [os.agno.com](https://os.agno.com/)
+- Connect to http://localhost:7777 to interact with the demo AgentOS.
 
 ---
 
 ## Additional Resources
 
-For more information, read the [Agno documentation](https://docs.agno.com).
+Additional Resources
+
+📘 Documentation: https://docs.agno.com
+💬 Discord: https://agno.link/discord
