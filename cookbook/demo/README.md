@@ -1,6 +1,6 @@
 # AgentOS Demo
 
-This cookbook contains comprehensive demonstrations of Agno's capabilities including both basic functionality and enterprise-grade advanced features.
+This cookbook demo's the AgentOS, a production runtime for multi-agent systems. We'll showcase how to serve Agents, Teams and Workflows as an API and connect to it from the AgentOS UI.
 
 ## Demo Files
 
@@ -42,7 +42,7 @@ docker run -d \
   -e POSTGRES_DB=ai \
   -e POSTGRES_USER=ai \
   -e POSTGRES_PASSWORD=ai \
-  -e PGDATA=/var/lib/postgresql/data/pgdata \
+  -e PGDATA=/var/lib/postgr++78\./esql/data/pgdata \
   -v pgvolume:/var/lib/postgresql/data \
   -p 5532:5432 \
   --name pgvector \
