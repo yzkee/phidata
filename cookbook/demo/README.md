@@ -67,13 +67,19 @@ export OPENAI_API_KEY=***
 export EXA_API_KEY=***
 ```
 
-### 5. Run the demo AgentOS
+### 5. Add Agno Documentation to the Knowledge Base
+
+```shell
+python cookbook/demo/agno_knowledge_agent.py
+```
+
+### 6. Run the demo AgentOS
 
 ```shell
 python cookbook/demo/run.py
 ```
 
-### 6. Connect to the AgentOS UI
+### 7. Connect to the AgentOS UI
 
 - Open the web interface: [os.agno.com](https://os.agno.com/)
 - Connect to http://localhost:7777 to interact with the demo AgentOS.
