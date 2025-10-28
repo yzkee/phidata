@@ -3,6 +3,7 @@ from __future__ import annotations
 from asyncio import CancelledError, create_task
 from collections import ChainMap, deque
 from dataclasses import dataclass
+from inspect import iscoroutinefunction
 from os import getenv
 from textwrap import dedent
 from typing import (
@@ -623,6 +624,8 @@ class Agent:
 
         self._hooks_normalised = False
 
+        self._mcp_tools_initialized_on_run: List[Any] = []  
+
         # Lazy-initialized shared thread pool executor for background tasks (memory, cultural knowledge, etc.)
         self._background_executor: Optional[Any] = None
 
@@ -806,6 +809,21 @@ class Agent:
 
     def set_tools(self, tools: Sequence[Union[Toolkit, Callable, Function, Dict]]):
         self.tools = list(tools) if tools else []
+
+    async def _connect_mcp_tools(self) -> None:
+        """Connect the MCP tools to the agent."""
+        if self.tools:
+            for tool in self.tools:
+                if tool.__class__.__name__ in ["MCPTools", "MultiMCPTools"] and not tool.initialized:  # type: ignore
+                    # Connect the MCP server
+                    await tool.connect()  # type: ignore
+                    self._mcp_tools_initialized_on_run.append(tool)
+
+    async def _disconnect_mcp_tools(self) -> None:
+        """Disconnect the MCP tools from the agent."""
+        for tool in self._mcp_tools_initialized_on_run:
+            await tool.close()
+        self._mcp_tools_initialized_on_run = []
 
     def _initialize_session(
         self,
@@ -1914,6 +1932,9 @@ class Agent:
             return run_response
 
         finally:
+            # Always disconnect MCP tools
+            await self._disconnect_mcp_tools()
+
             # Cancel the memory task if it's still running
             if memory_task is not None and not memory_task.done():
                 memory_task.cancel()
@@ -2261,6 +2282,9 @@ class Agent:
             # Cleanup and store the run response and session
             await self._acleanup_and_store(run_response=run_response, session=agent_session, user_id=user_id)
         finally:
+            # Always disconnect MCP tools
+            await self._disconnect_mcp_tools()
+
             # Cancel the memory task if it's still running
             if memory_task is not None and not memory_task.done():
                 memory_task.cancel()
@@ -2365,6 +2389,8 @@ class Agent:
 
         # Create a run_id for this specific run
         run_id = str(uuid4())
+
+        print("RUN ID", run_id)
 
         # 2. Validate input against input_schema if provided
         validated_input = self._validate_input(input)
@@ -3489,6 +3515,9 @@ class Agent:
 
             return run_response
         finally:
+            # Always disconnect MCP tools
+            await self._disconnect_mcp_tools()
+
             # Always clean up the run tracking
             cleanup_run(run_response.run_id)  # type: ignore
 
@@ -3761,6 +3790,9 @@ class Agent:
             # Cleanup and store the run response and session
             await self._acleanup_and_store(run_response=run_response, session=agent_session, user_id=user_id)
         finally:
+            # Always disconnect MCP tools
+            await self._disconnect_mcp_tools()
+
             # Always clean up the run tracking
             cleanup_run(run_response.run_id)  # type: ignore
 
@@ -3878,8 +3910,6 @@ class Agent:
             try:
                 # Filter arguments to only include those that the hook accepts
                 filtered_args = filter_hook_args(hook, all_args)
-
-                from inspect import iscoroutinefunction
 
                 if iscoroutinefunction(hook):
                     await hook(**filtered_args)
@@ -5191,7 +5221,6 @@ class Agent:
         self,
         run_response: RunOutput,
         session: AgentSession,
-        async_mode: bool = False,
         user_id: Optional[str] = None,
         knowledge_filters: Optional[Dict[str, Any]] = None,
     ) -> List[Union[Toolkit, Callable, Function, Dict]]:
@@ -5200,8 +5229,7 @@ class Agent:
         # Add provided tools
         if self.tools is not None:
             # If not running in async mode, raise if any tool is async
-            if not async_mode:
-                self._raise_if_async_tools()
+            self._raise_if_async_tools()
             agent_tools.extend(self.tools)
 
         # Add tools for accessing memory
@@ -5217,10 +5245,10 @@ class Agent:
             )
 
         if self.enable_agentic_memory:
-            agent_tools.append(self._get_update_user_memory_function(user_id=user_id, async_mode=async_mode))
+            agent_tools.append(self._get_update_user_memory_function(user_id=user_id, async_mode=False))
 
         if self.enable_agentic_culture:
-            agent_tools.append(self._get_update_cultural_knowledge_function(async_mode=async_mode))
+            agent_tools.append(self._get_update_cultural_knowledge_function(async_mode=False))
 
         if self.enable_agentic_state:
             agent_tools.append(Function(name="update_session_state", entrypoint=self._update_session_state_tool))
@@ -5230,7 +5258,7 @@ class Agent:
             # Check if knowledge retriever is an async function but used in sync mode
             from inspect import iscoroutinefunction
 
-            if not async_mode and self.knowledge_retriever and iscoroutinefunction(self.knowledge_retriever):
+            if self.knowledge_retriever and iscoroutinefunction(self.knowledge_retriever):
                 log_warning(
                     "Async knowledge retriever function is being used with synchronous agent.run() or agent.print_response(). "
                     "It is recommended to use agent.arun() or agent.aprint_response() instead."
@@ -5242,7 +5270,7 @@ class Agent:
                     agent_tools.append(
                         self._search_knowledge_base_with_agentic_filters_function(
                             run_response=run_response,
-                            async_mode=async_mode,
+                            async_mode=False,
                             knowledge_filters=knowledge_filters,
                         )
                     )
@@ -5250,7 +5278,7 @@ class Agent:
                     agent_tools.append(
                         self._get_search_knowledge_base_function(
                             run_response=run_response,
-                            async_mode=async_mode,
+                            async_mode=False,
                             knowledge_filters=knowledge_filters,
                         )
                     )
@@ -5269,9 +5297,35 @@ class Agent:
     ) -> List[Union[Toolkit, Callable, Function, Dict]]:
         agent_tools: List[Union[Toolkit, Callable, Function, Dict]] = []
 
+        # Connect MCP tools
+        await self._connect_mcp_tools()
+
         # Add provided tools
         if self.tools is not None:
-            agent_tools.extend(self.tools)
+            for tool in self.tools:
+                if tool.__class__.__name__ in ["MCPTools", "MultiMCPTools"]:
+                    if tool.refresh_connection:  # type: ignore
+                        try:
+                            is_alive = await tool.is_alive()  # type: ignore
+                            if not is_alive:
+                                await tool.connect(force=True)  # type: ignore
+                        except (RuntimeError, BaseException) as e:
+                            log_warning(f"Failed to check if MCP tool is alive or to connect to it: {e}")
+                            continue
+
+                        try:
+                            await tool.build_tools()  # type: ignore
+                        except (RuntimeError, BaseException) as e:
+                            log_warning(f"Failed to build tools for {str(tool)}: {e}")
+                            continue
+
+                    # Only add the tool if it successfully connected and built its tools
+                    if not tool.initialized:  # type: ignore
+                        continue
+
+                    agent_tools.append(tool)
+                else:
+                    agent_tools.append(tool)
 
         # Add tools for accessing memory
         if self.read_chat_history:

@@ -651,6 +651,9 @@ class Team:
 
         self._hooks_normalised = False
 
+        # List of MCP tools that were initialized on the last run
+        self._mcp_tools_initialized_on_run: List[Any] = []  
+
         # Lazy-initialized shared thread pool executor for background tasks (memory, cultural knowledge, etc.)
         self._background_executor: Optional[Any] = None
 
@@ -909,6 +912,21 @@ class Team:
             bool: True if the run was found and marked for cancellation, False otherwise.
         """
         return cancel_run_global(run_id)
+
+    async def _connect_mcp_tools(self) -> None:
+        """Connect the MCP tools to the agent."""
+        if self.tools is not None:
+            for tool in self.tools:
+                if tool.__class__.__name__ in ["MCPTools", "MultiMCPTools"] and not tool.initialized:  # type: ignore
+                    # Connect the MCP server
+                    await tool.connect()  # type: ignore
+                    self._mcp_tools_initialized_on_run.append(tool)
+
+    async def _disconnect_mcp_tools(self) -> None:
+        """Disconnect the MCP tools from the agent."""
+        for tool in self._mcp_tools_initialized_on_run:
+            await tool.close()
+        self._mcp_tools_initialized_on_run = []
 
     def _execute_pre_hooks(
         self,
@@ -2055,6 +2073,7 @@ class Team:
         # 4. Determine tools for model
         team_run_context: Dict[str, Any] = {}
         self.model = cast(Model, self.model)
+        await self._check_and_refresh_mcp_tools()
         _tools = self._determine_tools_for_model(
             model=self.model,
             run_response=run_response,
@@ -2202,6 +2221,7 @@ class Team:
 
             return run_response
         finally:
+            await self._disconnect_mcp_tools()
             # Cancel the memory task if it's still running
             if memory_task is not None and not memory_task.done():
                 memory_task.cancel()
@@ -2290,6 +2310,7 @@ class Team:
         # 5. Determine tools for model
         team_run_context: Dict[str, Any] = {}
         self.model = cast(Model, self.model)
+        await self._check_and_refresh_mcp_tools()
         _tools = self._determine_tools_for_model(
             model=self.model,
             run_response=run_response,
@@ -2526,6 +2547,7 @@ class Team:
             await self._acleanup_and_store(run_response=run_response, session=team_session)
 
         finally:
+            await self._disconnect_mcp_tools()
             # Cancel the memory task if it's still running
             if memory_task is not None and not memory_task.done():
                 memory_task.cancel()
@@ -4896,6 +4918,29 @@ class Team:
             except Exception as e:
                 log_warning(f"Failed to resolve context for '{key}': {e}")
 
+    async def _check_and_refresh_mcp_tools(self) -> None:
+        # Connect MCP tools
+        await self._connect_mcp_tools()
+
+        # Add provided tools
+        if self.tools is not None:
+            for tool in self.tools:
+                if tool.__class__.__name__ in ["MCPTools", "MultiMCPTools"]:
+                    if tool.refresh_connection:  # type: ignore
+                        try:
+                            is_alive = await tool.is_alive()  # type: ignore
+                            if not is_alive:
+                                await tool.connect(force=True)  # type: ignore
+                        except (RuntimeError, BaseException) as e:
+                            log_warning(f"Failed to check if MCP tool is alive: {e}")
+                            continue
+
+                        try:
+                            await tool.build_tools()  # type: ignore
+                        except (RuntimeError, BaseException) as e:
+                            log_warning(f"Failed to build tools for {str(tool)}: {e}")
+                            continue
+
     def _determine_tools_for_model(
         self,
         model: Model,
@@ -4924,6 +4969,10 @@ class Team:
         # Add provided tools
         if self.tools is not None:
             for tool in self.tools:
+                if tool.__class__.__name__ in ["MCPTools", "MultiMCPTools"]:
+                    # Only add the tool if it successfully connected and built its tools
+                    if not tool.initialized:  # type: ignore
+                        continue
                 _tools.append(tool)
 
         if self.read_chat_history:
