@@ -1129,6 +1129,9 @@ class MemoryManager:
             """
             from agno.db.base import UserMemory
 
+            if memory == "":
+                return "Can't update memory with empty string. Use the delete memory function if available."
+
             try:
                 db.upsert_user_memory(
                     UserMemory(
@@ -1247,6 +1250,9 @@ class MemoryManager:
                 str: A message indicating if the memory was updated successfully or not.
             """
             from agno.db.base import UserMemory
+
+            if memory == "":
+                return "Can't update memory with empty string. Use the delete memory function if available."
 
             try:
                 if isinstance(db, AsyncBaseDb):
