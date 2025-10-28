@@ -1452,7 +1452,7 @@ class Model(ABC):
                             # Capture output
                             function_call_output += item.content or ""
 
-                        if function_call.function.show_result:
+                        if function_call.function.show_result and item.content is not None:
                             yield ModelResponse(content=item.content)
 
                     if isinstance(item, CustomEvent):
@@ -1463,7 +1463,7 @@ class Model(ABC):
 
                 else:
                     function_call_output += str(item)
-                    if function_call.function.show_result:
+                    if function_call.function.show_result and item is not None:
                         yield ModelResponse(content=str(item))
         else:
             from agno.tools.function import ToolResult
@@ -1485,7 +1485,7 @@ class Model(ABC):
             else:
                 function_call_output = str(function_execution_result.result) if function_execution_result.result else ""
 
-            if function_call.function.show_result:
+            if function_call.function.show_result and function_call_output is not None:
                 yield ModelResponse(content=function_call_output)
 
         # Create and yield function call result
@@ -1840,7 +1840,7 @@ class Model(ABC):
                                 # Capture output
                                 function_call_output += item.content or ""
 
-                            if function_call.function.show_result:
+                            if function_call.function.show_result and item.content is not None:
                                 await event_queue.put(ModelResponse(content=item.content))
                                 continue
 
@@ -1853,7 +1853,7 @@ class Model(ABC):
                     # Yield custom events emitted by the tool
                     else:
                         function_call_output += str(item)
-                        if function_call.function.show_result:
+                        if function_call.function.show_result and item is not None:
                             await event_queue.put(ModelResponse(content=str(item)))
 
                 # Store the final output for this generator
@@ -1949,7 +1949,7 @@ class Model(ABC):
                                 # Capture output
                                 function_call_output += item.content or ""
 
-                            if function_call.function.show_result:
+                            if function_call.function.show_result and item.content is not None:
                                 yield ModelResponse(content=item.content)
                                 continue
 
@@ -1957,7 +1957,7 @@ class Model(ABC):
                         yield item
                     else:
                         function_call_output += str(item)
-                        if function_call.function.show_result:
+                        if function_call.function.show_result and item is not None:
                             yield ModelResponse(content=str(item))
             else:
                 from agno.tools.function import ToolResult
@@ -1977,7 +1977,7 @@ class Model(ABC):
                 else:
                     function_call_output = str(function_call.result)
 
-                if function_call.function.show_result:
+                if function_call.function.show_result and function_call_output is not None:
                     yield ModelResponse(content=function_call_output)
 
             # Create and yield function call result
