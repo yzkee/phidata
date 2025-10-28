@@ -354,9 +354,6 @@ class AsyncPostgresDb(AsyncBaseDb):
 
                 if user_id is not None:
                     stmt = stmt.where(table.c.user_id == user_id)
-                if session_type is not None:
-                    session_type_value = session_type.value if isinstance(session_type, SessionType) else session_type
-                    stmt = stmt.where(table.c.session_type == session_type_value)
                 result = await sess.execute(stmt)
                 row = result.fetchone()
                 if row is None:
