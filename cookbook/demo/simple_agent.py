@@ -12,6 +12,7 @@ agno_agent = Agent(
     tools=[MCPTools(transport="streamable-http", url="https://docs.agno.com/mcp")],
     add_history_to_context=True,
     add_datetime_to_context=True,
+    enable_agentic_memory=True,
     num_history_runs=3,
     markdown=True,
 )
@@ -22,4 +23,4 @@ app = agent_os.get_app()
 
 # ************* Run AgentOS *************
 if __name__ == "__main__":
-    agent_os.serve(app="basic_demo:app", reload=True)
+    agent_os.serve(app="simple_agent:app", reload=True)
