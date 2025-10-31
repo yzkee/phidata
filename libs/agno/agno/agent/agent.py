@@ -47,6 +47,7 @@ from agno.models.base import Model
 from agno.models.message import Message, MessageReferences
 from agno.models.metrics import Metrics
 from agno.models.response import ModelResponse, ModelResponseEvent, ToolExecution
+from agno.models.utils import get_model
 from agno.reasoning.step import NextAction, ReasoningStep, ReasoningSteps
 from agno.run.agent import (
     RunEvent,
@@ -416,7 +417,7 @@ class Agent:
     def __init__(
         self,
         *,
-        model: Optional[Model] = None,
+        model: Optional[Union[Model, str]] = None,
         name: Optional[str] = None,
         id: Optional[str] = None,
         introduction: Optional[str] = None,
@@ -460,7 +461,7 @@ class Agent:
         pre_hooks: Optional[Union[List[Callable[..., Any]], List[BaseGuardrail]]] = None,
         post_hooks: Optional[Union[List[Callable[..., Any]], List[BaseGuardrail]]] = None,
         reasoning: bool = False,
-        reasoning_model: Optional[Model] = None,
+        reasoning_model: Optional[Union[Model, str]] = None,
         reasoning_agent: Optional[Agent] = None,
         reasoning_min_steps: int = 1,
         reasoning_max_steps: int = 10,
@@ -488,12 +489,12 @@ class Agent:
         retries: int = 0,
         delay_between_retries: int = 1,
         exponential_backoff: bool = False,
-        parser_model: Optional[Model] = None,
+        parser_model: Optional[Union[Model, str]] = None,
         parser_model_prompt: Optional[str] = None,
         input_schema: Optional[Type[BaseModel]] = None,
         output_schema: Optional[Type[BaseModel]] = None,
         parse_response: bool = True,
-        output_model: Optional[Model] = None,
+        output_model: Optional[Union[Model, str]] = None,
         output_model_prompt: Optional[str] = None,
         structured_outputs: Optional[bool] = None,
         use_json_mode: bool = False,
@@ -512,7 +513,7 @@ class Agent:
         debug_level: Literal[1, 2] = 1,
         telemetry: bool = True,
     ):
-        self.model = model
+        self.model = model  # type: ignore[assignment]
         self.name = name
         self.id = id
         self.introduction = introduction
@@ -578,7 +579,7 @@ class Agent:
         self.post_hooks = post_hooks
 
         self.reasoning = reasoning
-        self.reasoning_model = reasoning_model
+        self.reasoning_model = reasoning_model  # type: ignore[assignment]
         self.reasoning_agent = reasoning_agent
         self.reasoning_min_steps = reasoning_min_steps
         self.reasoning_max_steps = reasoning_max_steps
@@ -609,12 +610,12 @@ class Agent:
         self.retries = retries
         self.delay_between_retries = delay_between_retries
         self.exponential_backoff = exponential_backoff
-        self.parser_model = parser_model
+        self.parser_model = parser_model  # type: ignore[assignment]
         self.parser_model_prompt = parser_model_prompt
         self.input_schema = input_schema
         self.output_schema = output_schema
         self.parse_response = parse_response
-        self.output_model = output_model
+        self.output_model = output_model  # type: ignore[assignment]
         self.output_model_prompt = output_model_prompt
 
         self.structured_outputs = structured_outputs
@@ -657,6 +658,8 @@ class Agent:
 
         # Lazy-initialized shared thread pool executor for background tasks (memory, cultural knowledge, etc.)
         self._background_executor: Optional[Any] = None
+
+        self._get_models()
 
     @property
     def background_executor(self) -> Any:
@@ -813,6 +816,16 @@ class Agent:
     def _has_async_db(self) -> bool:
         """Return True if the db the agent is equipped with is an Async implementation"""
         return self.db is not None and isinstance(self.db, AsyncBaseDb)
+
+    def _get_models(self) -> None:
+        if self.model is not None:
+            self.model = get_model(self.model)
+        if self.reasoning_model is not None:
+            self.reasoning_model = get_model(self.reasoning_model)
+        if self.parser_model is not None:
+            self.parser_model = get_model(self.parser_model)
+        if self.output_model is not None:
+            self.output_model = get_model(self.output_model)
 
     def initialize_agent(self, debug_mode: Optional[bool] = None) -> None:
         self._set_default_model()
@@ -8494,7 +8507,7 @@ class Agent:
                         store_events=self.store_events,
                     )
             else:
-                log_warning(
+                log_info(
                     f"Reasoning model: {reasoning_model.__class__.__name__} is not a native reasoning model, defaulting to manual Chain-of-Thought reasoning"
                 )
                 use_default_reasoning = True
@@ -8787,7 +8800,7 @@ class Agent:
                         store_events=self.store_events,
                     )
             else:
-                log_warning(
+                log_info(
                     f"Reasoning model: {reasoning_model.__class__.__name__} is not a native reasoning model, defaulting to manual Chain-of-Thought reasoning"
                 )
                 use_default_reasoning = True
