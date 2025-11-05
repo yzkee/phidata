@@ -49,13 +49,13 @@ from agno.models.metrics import Metrics
 from agno.models.response import ModelResponse, ModelResponseEvent, ToolExecution
 from agno.models.utils import get_model
 from agno.reasoning.step import NextAction, ReasoningStep, ReasoningSteps
+from agno.run import RunContext, RunStatus
 from agno.run.agent import (
     RunEvent,
     RunInput,
     RunOutput,
     RunOutputEvent,
 )
-from agno.run.base import RunContext, RunStatus
 from agno.run.cancel import (
     cancel_run as cancel_run_global,
 )
@@ -95,7 +95,9 @@ from agno.utils.agent import (
     scrub_media_from_run_output,
     scrub_tool_results_from_run_output,
     set_session_name_util,
+    store_media_util,
     update_session_state_util,
+    validate_media_object_id,
     wait_for_background_tasks,
     wait_for_background_tasks_stream,
 )
@@ -782,6 +784,7 @@ class Agent:
             self.add_culture_to_context = (
                 self.enable_agentic_culture or self.update_cultural_knowledge or self.culture_manager is not None
             )
+
     def _set_memory_manager(self) -> None:
         if self.db is None:
             log_warning("Database not provided. Memories will not be stored.")
@@ -1064,7 +1067,7 @@ class Agent:
 
             # 8. Store media if enabled
             if self.store_media:
-                self._store_media(run_response, model_response)
+                store_media_util(run_response, model_response)
 
             # 9. Convert the response to the structured format if needed
             self._convert_response_to_structured_format(run_response)
@@ -1538,9 +1541,9 @@ class Agent:
         # Normalise hook & guardails
         if not self._hooks_normalised:
             if self.pre_hooks:
-                self.pre_hooks = normalize_hooks(self.pre_hooks)
+                self.pre_hooks = normalize_hooks(self.pre_hooks)  # type: ignore
             if self.post_hooks:
-                self.post_hooks = normalize_hooks(self.post_hooks)
+                self.post_hooks = normalize_hooks(self.post_hooks)  # type: ignore
             self._hooks_normalised = True
 
         session_id, user_id = self._initialize_session(session_id=session_id, user_id=user_id)
@@ -1548,7 +1551,7 @@ class Agent:
         # Initialize the Agent
         self.initialize_agent(debug_mode=debug_mode)
 
-        image_artifacts, video_artifacts, audio_artifacts, file_artifacts = self._validate_media_object_id(
+        image_artifacts, video_artifacts, audio_artifacts, file_artifacts = validate_media_object_id(
             images=images, videos=videos, audios=audio, files=files
         )
 
@@ -1624,11 +1627,8 @@ class Agent:
         self.model = cast(Model, self.model)
 
         # Merge agent metadata with run metadata
-        if self.metadata is not None:
-            if metadata is None:
-                metadata = self.metadata
-            else:
-                merge_dictionaries(metadata, self.metadata)
+        if self.metadata is not None and metadata is not None:
+            merge_dictionaries(metadata, self.metadata)
 
         # Create a new run_response for this attempt
         run_response = RunOutput(
@@ -1914,7 +1914,7 @@ class Agent:
 
             # 12. Store media if enabled
             if self.store_media:
-                self._store_media(run_response, model_response)
+                store_media_util(run_response, model_response)
 
             # 13. Execute post-hooks (after output is generated but before response is returned)
             if self.post_hooks is not None:
@@ -2071,6 +2071,7 @@ class Agent:
             pre_hook_iterator = self._aexecute_pre_hooks(
                 hooks=self.pre_hooks,  # type: ignore
                 run_response=run_response,
+                run_context=run_context,
                 run_input=run_input,
                 session=agent_session,
                 user_id=user_id,
@@ -2453,9 +2454,9 @@ class Agent:
         # Normalise hooks & guardails
         if not self._hooks_normalised:
             if self.pre_hooks:
-                self.pre_hooks = normalize_hooks(self.pre_hooks, async_mode=True)
+                self.pre_hooks = normalize_hooks(self.pre_hooks, async_mode=True)  # type: ignore
             if self.post_hooks:
-                self.post_hooks = normalize_hooks(self.post_hooks, async_mode=True)
+                self.post_hooks = normalize_hooks(self.post_hooks, async_mode=True)  # type: ignore
             self._hooks_normalised = True
 
         # Initialize session
@@ -2464,7 +2465,7 @@ class Agent:
         # Initialize the Agent
         self.initialize_agent(debug_mode=debug_mode)
 
-        image_artifacts, video_artifacts, audio_artifacts, file_artifacts = self._validate_media_object_id(
+        image_artifacts, video_artifacts, audio_artifacts, file_artifacts = validate_media_object_id(
             images=images, videos=videos, audios=audio, files=files
         )
 
@@ -2969,7 +2970,7 @@ class Agent:
 
             # 5. Store media if enabled
             if self.store_media:
-                self._store_media(run_response, model_response)
+                store_media_util(run_response, model_response)
 
             # 6. Execute post-hooks
             if self.post_hooks is not None:
@@ -3539,7 +3540,7 @@ class Agent:
 
             # 11. Store media if enabled
             if self.store_media:
-                self._store_media(run_response, model_response)
+                store_media_util(run_response, model_response)
 
             raise_if_cancelled(run_response.run_id)  # type: ignore
 
@@ -4212,6 +4213,7 @@ class Agent:
         yield pause_event  # type: ignore
 
         log_debug(f"Agent Run Paused: {run_response.run_id}", center=True, symbol="*")
+
     async def _ahandle_agent_run_paused(
         self,
         run_response: RunOutput,
@@ -4608,25 +4610,6 @@ class Agent:
                     yield event
                 _t.requires_user_input = False
                 _t.answered = True
-
-    def _store_media(self, run_response: RunOutput, model_response: ModelResponse):
-        """Store media from model response in run_response for persistence"""
-        # Handle generated media fields from ModelResponse (generated media)
-        if model_response.images is not None:
-            for image in model_response.images:
-                self._add_image(image, run_response)  # Generated images go to run_response.images
-
-        if model_response.videos is not None:
-            for video in model_response.videos:
-                self._add_video(video, run_response)  # Generated videos go to run_response.videos
-
-        if model_response.audios is not None:
-            for audio in model_response.audios:
-                self._add_audio(audio, run_response)  # Generated audio go to run_response.audio
-
-        if model_response.files is not None:
-            for file in model_response.files:
-                self._add_file(file, run_response)  # Generated files go to run_response.files
 
     def _update_run_response(
         self,
@@ -5052,7 +5035,9 @@ class Agent:
                     # Store media in run_response if store_media is enabled
                     if self.store_media:
                         for image in model_response_event.images:
-                            self._add_image(image, run_response)
+                            if run_response.images is None:
+                                run_response.images = []
+                            run_response.images.append(image)
 
             # Handle tool interruption events
             elif model_response_event.event == ModelResponseEvent.tool_call_paused.value:
@@ -5101,15 +5086,27 @@ class Agent:
 
                 if model_response_event.images is not None:
                     for image in model_response_event.images:
-                        self._add_image(image, run_response)
+                        if run_response.images is None:
+                            run_response.images = []
+                        run_response.images.append(image)
 
                 if model_response_event.videos is not None:
                     for video in model_response_event.videos:
-                        self._add_video(video, run_response)
+                        if run_response.videos is None:
+                            run_response.videos = []
+                        run_response.videos.append(video)
 
                 if model_response_event.audios is not None:
                     for audio in model_response_event.audios:
-                        self._add_audio(audio, run_response)
+                        if run_response.audio is None:
+                            run_response.audio = []
+                        run_response.audio.append(audio)
+
+                if model_response_event.files is not None:
+                    for file_obj in model_response_event.files:
+                        if run_response.files is None:
+                            run_response.files = []
+                        run_response.files.append(file_obj)
 
                 reasoning_step: Optional[ReasoningStep] = None
 
@@ -5648,6 +5645,7 @@ class Agent:
             else:
                 log_debug("Model does not support structured or JSON schema outputs.")
                 return json_response_format
+
     def _resolve_run_dependencies(self, run_context: RunContext) -> None:
         from inspect import iscoroutine, iscoroutinefunction, signature
 
@@ -6437,6 +6435,7 @@ class Agent:
         if self.db is None:
             return
         await self.db.delete_session(session_id=session_id)  # type: ignore
+
     def get_messages_for_session(self, session_id: Optional[str] = None) -> List[Message]:
         """Get messages for a session
 
@@ -6974,11 +6973,12 @@ class Agent:
         self,
         session: AgentSession,
         run_context: Optional[RunContext] = None,
-        session_state: Optional[Dict[str, Any]] = None,
         user_id: Optional[str] = None,
         tools: Optional[List[Union[Function, dict]]] = None,
-        dependencies: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        add_session_state_to_context: Optional[bool] = None,
+        session_state: Optional[Dict[str, Any]] = None,  # Deprecated
+        dependencies: Optional[Dict[str, Any]] = None,  # Deprecated
+        metadata: Optional[Dict[str, Any]] = None,  # Deprecated
     ) -> Optional[Message]:
         """Return the system message for the Agent.
 
@@ -7312,7 +7312,7 @@ class Agent:
             system_message_content += f"{get_response_model_format_prompt(self.output_schema)}"
 
         # 3.3.15 Add the session state to the system message
-        if self.add_session_state_to_context and session_state is not None:
+        if add_session_state_to_context and session_state is not None:
             system_message_content += self._get_formatted_session_state_for_system_message(session_state)
 
         # Return the system message
@@ -7767,6 +7767,7 @@ class Agent:
             tools=tools,
             dependencies=dependencies,
             metadata=metadata,
+            add_session_state_to_context=add_session_state_to_context,
         )
         if system_message is not None:
             run_messages.system_message = system_message
@@ -8335,38 +8336,6 @@ class Agent:
             metrics.time_to_first_token = current_run_metrics.time_to_first_token
 
         return metrics
-
-    ###########################################################################
-    # Handle images, videos and audio
-    ###########################################################################
-
-    def _add_image(self, image: Image, run_response: RunOutput) -> None:
-        """Add an image to both the agent's stateful storage and the current run response"""
-        # Add to run response
-        if run_response.images is None:
-            run_response.images = []
-        run_response.images.append(image)
-
-    def _add_video(self, video: Video, run_response: RunOutput) -> None:
-        """Add a video to both the agent's stateful storage and the current run response"""
-        # Add to run response
-        if run_response.videos is None:
-            run_response.videos = []
-        run_response.videos.append(video)
-
-    def _add_audio(self, audio: Audio, run_response: RunOutput) -> None:
-        """Add audio to both the agent's stateful storage and the current run response"""
-        # Add to run response
-        if run_response.audio is None:
-            run_response.audio = []
-        run_response.audio.append(audio)
-
-    def _add_file(self, file: File, run_response: RunOutput) -> None:
-        """Add file to both the agent's stateful storage and the current run response"""
-        # Add to run response
-        if run_response.files is None:
-            run_response.files = []
-        run_response.files.append(file)
 
     ###########################################################################
     # Reasoning
@@ -10226,58 +10195,6 @@ class Agent:
 
         if not self.store_history_messages:
             scrub_history_messages_from_run_output(run_response)
-
-    def _validate_media_object_id(
-        self,
-        images: Optional[Sequence[Image]] = None,
-        videos: Optional[Sequence[Video]] = None,
-        audios: Optional[Sequence[Audio]] = None,
-        files: Optional[Sequence[File]] = None,
-    ) -> tuple:
-        """Convert raw Image/Video/Audio objects - now unified, so just return as-is."""
-        # With unified classes, no conversion needed - just ensure IDs are set
-        image_list = None
-        if images:
-            image_list = []
-            for img in images:
-                # Ensure ID is set (validation should handle this, but double-check)
-                if not img.id:
-                    from uuid import uuid4
-
-                    img.id = str(uuid4())
-                image_list.append(img)
-
-        video_list = None
-        if videos:
-            video_list = []
-            for vid in videos:
-                if not vid.id:
-                    from uuid import uuid4
-
-                    vid.id = str(uuid4())
-                video_list.append(vid)
-
-        audio_list = None
-        if audios:
-            audio_list = []
-            for aud in audios:
-                if not aud.id:
-                    from uuid import uuid4
-
-                    aud.id = str(uuid4())
-                audio_list.append(aud)
-
-        file_list = None
-        if files:
-            file_list = []
-            for file in files:
-                if not file.id:
-                    from uuid import uuid4
-
-                    file.id = str(uuid4())
-                file_list.append(file)
-
-        return image_list, video_list, audio_list, file_list
 
     def cli_app(
         self,
