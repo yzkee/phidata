@@ -5777,7 +5777,9 @@ class Agent:
             log_warning(f"Error getting session from db: {e}")
             return None
 
-    def _upsert_session(self, session: AgentSession) -> Optional[AgentSession]:
+    def _upsert_session(
+        self, session: Union[AgentSession, TeamSession, WorkflowSession]
+    ) -> Optional[Union[AgentSession, TeamSession, WorkflowSession]]:
         """Upsert a Session into the database."""
 
         try:
@@ -5791,7 +5793,9 @@ class Agent:
             log_warning(f"Error upserting session into db: {e}")
             return None
 
-    async def _aupsert_session(self, session: AgentSession) -> Optional[AgentSession]:
+    async def _aupsert_session(
+        self, session: Union[AgentSession, TeamSession, WorkflowSession]
+    ) -> Optional[Union[AgentSession, TeamSession, WorkflowSession]]:
         """Upsert a Session into the database."""
         try:
             if not self.db:
@@ -6005,7 +6009,7 @@ class Agent:
     def get_session(
         self,
         session_id: Optional[str] = None,
-    ) -> Optional[AgentSession]:
+    ) -> Optional[Union[AgentSession, TeamSession, WorkflowSession]]:
         """Load an AgentSession from database or cache.
 
         Args:
@@ -6066,7 +6070,7 @@ class Agent:
     async def aget_session(
         self,
         session_id: Optional[str] = None,
-    ) -> Optional[AgentSession]:
+    ) -> Optional[Union[AgentSession, TeamSession, WorkflowSession]]:
         """Load an AgentSession from database or cache.
 
         Args:
@@ -6121,7 +6125,7 @@ class Agent:
         log_debug(f"AgentSession {session_id_to_load} not found in db")
         return None
 
-    def save_session(self, session: AgentSession) -> None:
+    def save_session(self, session: Union[AgentSession, TeamSession, WorkflowSession]) -> None:
         """
         Save the AgentSession to storage
         """
@@ -6143,7 +6147,7 @@ class Agent:
             self._upsert_session(session=session)
             log_debug(f"Created or updated AgentSession record: {session.session_id}")
 
-    async def asave_session(self, session: AgentSession) -> None:
+    async def asave_session(self, session: Union[AgentSession, TeamSession, WorkflowSession]) -> None:
         """
         Save the AgentSession to storage
         """
@@ -6219,12 +6223,16 @@ class Agent:
         if session is None:
             raise Exception("Session not found")
 
+        if not hasattr(session, "agent_data"):
+            raise Exception("Session is not an AgentSession")
+
         # -*- Rename Agent
         self.name = name
-        if session.agent_data is not None:
-            session.agent_data["name"] = name
+
+        if session.agent_data is not None:  # type: ignore
+            session.agent_data["name"] = name  # type: ignore
         else:
-            session.agent_data = {"name": name}
+            session.agent_data = {"name": name}  # type: ignore
 
         # -*- Save to storage
         if self._has_async_db():
@@ -6478,7 +6486,7 @@ class Agent:
             raise Exception("Session not found")
 
         # Only filter by agent_id if this is part of a team
-        return session.get_messages_from_last_n_runs(
+        return session.get_messages_from_last_n_runs(  # type: ignore
             agent_id=self.id if self.team_id is not None else None,
         )
 
@@ -6501,7 +6509,7 @@ class Agent:
             raise Exception("Session not found")
 
         # Only filter by agent_id if this is part of a team
-        return session.get_messages_from_last_n_runs(
+        return session.get_messages_from_last_n_runs(  # type: ignore
             agent_id=self.id if self.team_id is not None else None,
         )
 
@@ -6522,7 +6530,7 @@ class Agent:
         if session is None:
             raise Exception(f"Session {session_id} not found")
 
-        return session.get_session_summary()
+        return session.get_session_summary()  # type: ignore
 
     async def aget_session_summary(self, session_id: Optional[str] = None) -> Optional[SessionSummary]:
         """Get the session summary for the given session ID and user ID.
@@ -6541,7 +6549,7 @@ class Agent:
         if session is None:
             raise Exception(f"Session {session_id} not found")
 
-        return session.get_session_summary()
+        return session.get_session_summary()  # type: ignore
 
     def get_user_memories(self, user_id: Optional[str] = None) -> Optional[List[UserMemory]]:
         """Get the user memories for the given user ID.
