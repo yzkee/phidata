@@ -1,9 +1,9 @@
 from agno.agent import Agent
-from agno.models.anthropic import Claude
+from agno.models.openai import OpenAIResponses
 from agno.tools.parallel import ParallelTools
 
 agent = Agent(
-    model=Claude(id="claude-sonnet-4-5"),
+    model=OpenAIResponses(id="gpt-5.1"),
     tools=[ParallelTools()],
     instructions="No need to tell me its based on your research.",
     markdown=True,
