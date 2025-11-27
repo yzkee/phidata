@@ -29,7 +29,7 @@ class Claude(AnthropicClaude):
     For more information, see: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic.html
     """
 
-    id: str = "anthropic.claude-sonnet-4-20250514-v1:0"
+    id: str = "global.anthropic.claude-sonnet-4-5-20250929-v1:0"
     name: str = "AwsBedrockAnthropicClaude"
     provider: str = "AwsBedrock"
 
@@ -38,18 +38,6 @@ class Claude(AnthropicClaude):
     aws_region: Optional[str] = None
     api_key: Optional[str] = None
     session: Optional[Session] = None
-
-    # -*- Request parameters
-    max_tokens: int = 4096
-    temperature: Optional[float] = None
-    top_p: Optional[float] = None
-    top_k: Optional[int] = None
-    stop_sequences: Optional[List[str]] = None
-
-    # -*- Request parameters
-    request_params: Optional[Dict[str, Any]] = None
-    # -*- Client parameters
-    client_params: Optional[Dict[str, Any]] = None
 
     client: Optional[AnthropicBedrock] = None  # type: ignore
     async_client: Optional[AsyncAnthropicBedrock] = None  # type: ignore
