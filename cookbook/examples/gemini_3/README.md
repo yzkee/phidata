@@ -91,9 +91,3 @@ Agno supports a variety of Google-specific features. Learn more about them [here
 | Grounding     | `grounding=True`    | Search with citations        |
 | URL Context   | `url_context=True`  | Analyze web page content     |
 | NanoBanana    | `NanoBananaTools()` | Image generation toolkit     |
-
-## Updating the dependencies
-
-```bash
-pip-compile requirements.ini
-```
