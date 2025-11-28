@@ -14,7 +14,7 @@ This directory contains examples demonstrating Google's unique AI features:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/agno-ai/agno.git
+git clone https://github.com/agno-agi/agno.git
 cd agno/cookbook/examples/gemini_3
 ```
 
