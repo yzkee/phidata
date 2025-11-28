@@ -21,7 +21,9 @@ certifi==2025.11.12
 charset-normalizer==3.4.4
     # via requests
 click==8.3.1
-    # via typer
+    # via
+    #   typer
+    #   uvicorn
 docstring-parser==0.17.0
     # via agno
 fastapi==0.122.0
@@ -38,6 +40,7 @@ h11==0.16.0
     # via
     #   agno
     #   httpcore
+    #   uvicorn
 h2==4.3.0
     # via httpx
 hpack==4.1.0
@@ -129,5 +132,7 @@ typing-inspection==0.4.2
     #   pydantic-settings
 urllib3==2.5.0
     # via requests
+uvicorn==0.38.0
+    # via -r requirements.ini
 websockets==15.0.1
     # via google-genai
