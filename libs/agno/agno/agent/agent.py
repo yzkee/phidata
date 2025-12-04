@@ -684,6 +684,7 @@ class Agent:
         self._hooks_normalised = False
 
         self._mcp_tools_initialized_on_run: List[Any] = []
+        self._connectable_tools_initialized_on_run: List[Any] = []
 
         # Lazy-initialized shared thread pool executor for background tasks (memory, cultural knowledge, etc.)
         self._background_executor: Optional[Any] = None
@@ -913,15 +914,47 @@ class Agent:
                     and any(c.__name__ in ["MCPTools", "MultiMCPTools"] for c in type(tool).__mro__)
                     and not tool.initialized  # type: ignore
                 ):
-                    # Connect the MCP server
-                    await tool.connect()  # type: ignore
-                    self._mcp_tools_initialized_on_run.append(tool)  # type: ignore
+                    try:
+                        # Connect the MCP server
+                        await tool.connect()  # type: ignore
+                        self._mcp_tools_initialized_on_run.append(tool)  # type: ignore
+                    except Exception as e:
+                        log_warning(f"Error connecting tool: {str(e)}")
 
     async def _disconnect_mcp_tools(self) -> None:
         """Disconnect the MCP tools from the agent."""
         for tool in self._mcp_tools_initialized_on_run:
-            await tool.close()
+            try:
+                await tool.close()
+            except Exception as e:
+                log_warning(f"Error disconnecting tool: {str(e)}")
         self._mcp_tools_initialized_on_run = []
+
+    def _connect_connectable_tools(self) -> None:
+        """Connect tools that require connection management (e.g., database connections)."""
+        if self.tools:
+            for tool in self.tools:
+                if (
+                    hasattr(tool, "requires_connect")
+                    and tool.requires_connect
+                    and hasattr(tool, "connect")
+                    and tool not in self._connectable_tools_initialized_on_run
+                ):
+                    try:
+                        tool.connect()  # type: ignore
+                        self._connectable_tools_initialized_on_run.append(tool)
+                    except Exception as e:
+                        log_warning(f"Error connecting tool: {str(e)}")
+
+    def _disconnect_connectable_tools(self) -> None:
+        """Disconnect tools that require connection management."""
+        for tool in self._connectable_tools_initialized_on_run:
+            if hasattr(tool, "close"):
+                try:
+                    tool.close()  # type: ignore
+                except Exception as e:
+                    log_warning(f"Error disconnecting tool: {str(e)}")
+        self._connectable_tools_initialized_on_run = []
 
     def _initialize_session(
         self,
@@ -1176,6 +1209,8 @@ class Agent:
 
             return run_response
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always clean up the run tracking
             cleanup_run(run_response.run_id)  # type: ignore
 
@@ -1494,6 +1529,8 @@ class Agent:
                 run_response=run_response, session=session, run_context=run_context, user_id=user_id
             )
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always clean up the run tracking
             cleanup_run(run_response.run_id)  # type: ignore
 
@@ -2076,6 +2113,8 @@ class Agent:
             return run_response
 
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always disconnect MCP tools
             await self._disconnect_mcp_tools()
 
@@ -2443,6 +2482,8 @@ class Agent:
                 user_id=user_id,
             )
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always disconnect MCP tools
             await self._disconnect_mcp_tools()
 
@@ -3210,6 +3251,8 @@ class Agent:
 
             return run_response
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always clean up the run tracking
             cleanup_run(run_response.run_id)  # type: ignore
 
@@ -3387,6 +3430,8 @@ class Agent:
                 run_response=run_response, session=session, run_context=run_context, user_id=user_id
             )
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always clean up the run tracking
             cleanup_run(run_response.run_id)  # type: ignore
 
@@ -3851,6 +3896,8 @@ class Agent:
 
             return run_response
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always disconnect MCP tools
             await self._disconnect_mcp_tools()
 
@@ -4157,6 +4204,8 @@ class Agent:
                 user_id=user_id,
             )
         finally:
+            # Always disconnect connectable tools
+            self._disconnect_connectable_tools()
             # Always disconnect MCP tools
             await self._disconnect_mcp_tools()
 
@@ -5731,6 +5780,9 @@ class Agent:
     ) -> List[Union[Toolkit, Callable, Function, Dict]]:
         agent_tools: List[Union[Toolkit, Callable, Function, Dict]] = []
 
+        # Connect tools that require connection management
+        self._connect_connectable_tools()
+
         # Add provided tools
         if self.tools is not None:
             # If not running in async mode, raise if any tool is async
@@ -5804,6 +5856,9 @@ class Agent:
         check_mcp_tools: bool = True,
     ) -> List[Union[Toolkit, Callable, Function, Dict]]:
         agent_tools: List[Union[Toolkit, Callable, Function, Dict]] = []
+
+        # Connect tools that require connection management
+        self._connect_connectable_tools()
 
         # Connect MCP tools
         await self._connect_mcp_tools()
