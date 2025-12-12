@@ -6,7 +6,11 @@ An Agent that can search for songs, manage playlists, get personalized recommend
 
 Set the `SPOTIFY_TOKEN` environment variable with your Spotify access token.
 
-To get a token for testing, go to https://developer.spotify.com/ and click "See it in action".
+**Quick start:**
+Go to https://developer.spotify.com/ and click "See it in action" to get a token. This works for searching, creating playlists, and getting your top tracks.
+
+**Full access (with playback):**
+Run `python spotify_auth.py` to get a token with all scopes, including playback control.
 
 ## Features
 
