@@ -1,12 +1,12 @@
 # Gemini Agents
 
-Let's **build production-grade agents with Gemini and Agno**. This cookbook showcases how to combine Gemini's models with Agno's agent runtime, memory, and knowledge systems.
+This cookbook shows how to build production-grade agents with Gemini and Agno. It showcases how to combine Gemini's built-in features with Agno's agent runtime, memory, and knowledge systems.
 
 We'll build:
 | Agent | File | Key Features | Description |
 | :--- | :--- | :--- | :--- |
 | **Simple Research Agent** | `simple_research_agent.py` | **Grounding**, **Search** | Performs web research using built-in Gemini grounding and returns cited answers. |
-| **Creative Studio** | `creative_studio_agent.py` | **NanoBanana** | Generates high-quality images natively using Gemini image models and NanoBanana tools. |
+| **Creative Studio** | `creative_studio_agent.py` | **NanoBanana** | Generates high-quality images natively using NanoBanana. |
 | **Product Comparison** | `product_comparison_agent.py` | **URL Context** | Reads and compares content directly from URLs using `url_context=True`. |
 | **Self Learning Research Agent** | `self_learning_research_agent.py` | **Parallel Search**, **Continuous Learning** | Tracks internet consensus over time, explains what changed, and stores historical snapshots for future comparison. |
 
