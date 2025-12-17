@@ -3,15 +3,15 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from agno.agent import Agent
-from agno.knowledge.embedder.openai import OpenAIEmbedder
+from agno.knowledge.embedder.google import GeminiEmbedder
 from agno.knowledge.knowledge import Knowledge
 from agno.knowledge.reader.text_reader import TextReader
-from agno.models.openai import OpenAIResponses
+from agno.models.google import Gemini
 from agno.tools.parallel import ParallelTools
 from agno.tools.yfinance import YFinanceTools
 from agno.utils.log import logger
 from agno.vectordb.pgvector import PgVector, SearchType
-from db import db_url, demo_db
+from db import db_url, gemini_agents_db
 
 # ============================================================================
 # Knowledge base: stores successful learnings
@@ -22,10 +22,10 @@ agent_knowledge = Knowledge(
         db_url=db_url,
         table_name="agent_learnings",
         search_type=SearchType.hybrid,
-        embedder=OpenAIEmbedder(id="text-embedding-3-small"),
+        embedder=GeminiEmbedder(id="gemini-embedding-001"),
     ),
     max_results=5,
-    contents_db=demo_db,
+    contents_db=gemini_agents_db,
 )
 
 
@@ -72,9 +72,9 @@ def save_learning(
 
 
 # ============================================================================
-# System message
+# Instructions
 # ============================================================================
-system_message = """\
+instructions = """\
 You are a self-learning agent.
 
 You have access to:
@@ -137,9 +137,9 @@ Would you like me to save this as a {type}?\
 # ============================================================================
 self_learning_agent = Agent(
     name="Self Learning Agent",
-    model=OpenAIResponses(id="gpt-5.2"),
-    system_message=system_message,
-    db=demo_db,
+    model=Gemini(id="gemini-3-flash-preview"),
+    instructions=instructions,
+    db=gemini_agents_db,
     knowledge=agent_knowledge,
     tools=[ParallelTools(), YFinanceTools(), save_learning],
     # Enable the agent to remember user information and preferences

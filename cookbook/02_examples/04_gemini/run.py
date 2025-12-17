@@ -1,11 +1,12 @@
 from pathlib import Path
 
 from agents.creative_studio_agent import creative_studio_agent
+from agents.pal_agent import pal_agent
 from agents.product_comparison_agent import product_comparison_agent
+from agents.self_learning_agent import self_learning_agent
 from agents.self_learning_research_agent import self_learning_research_agent
 from agents.simple_research_agent import simple_research_agent
 from agno.os import AgentOS
-
 from db import gemini_agents_db
 
 # ============================================================================
@@ -20,9 +21,11 @@ agent_os = AgentOS(
     id="gemini-agentos",
     agents=[
         simple_research_agent,
+        self_learning_agent,
+        creative_studio_agent,
         self_learning_research_agent,
         product_comparison_agent,
-        creative_studio_agent,
+        pal_agent,
     ],
     config=config_path,
     tracing=True,
