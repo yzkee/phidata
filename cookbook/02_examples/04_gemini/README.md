@@ -13,8 +13,6 @@ Production-grade AI agents powered by Gemini and Agno. This cookbook demonstrate
 | **Self-Learning Research Agent** | Tracks internet consensus over time with historical snapshots | Parallel Search, Continuous Learning |
 | **PaL (Plan and Learn)** | Disciplined planning and execution with learning | Session State, Knowledge Base, Parallel Search |
 
----
-
 ## ✨ Featured: PaL — Plan and Learn Agent
 
 > *Plan. Execute. Learn. Repeat.*
@@ -40,8 +38,6 @@ session_state={
 
 [→ See the full implementation](agents/pal_agent.py)
 
----
-
 ## Native Gemini Features
 
 Agno supports all native Gemini capabilities out of the box:
@@ -59,8 +55,6 @@ Agno supports all native Gemini capabilities out of the box:
 - **Reasoning** — Strong native reasoning with fewer hallucinations
 - **Built-in primitives** — Image generation, URL context, and grounding are first-class
 - **Production-ready** — Agno provides persistence, memory, knowledge, and state management
-
----
 
 ## Getting Started
 
@@ -150,15 +144,23 @@ python cookbook/02_examples/04_gemini/agents/self_learning_research_agent.py
 python cookbook/02_examples/04_gemini/agents/pal_agent.py
 ```
 
----
+## File Structure
 
+```
+cookbook/02_examples/04_gemini/
+├── agents/
+│   ├── creative_studio_agent.py    # Image generation
+│   ├── pal_agent.py                # Plan and Learn (session state)
+│   ├── product_comparison_agent.py # URL comparison
+│   ├── self_learning_agent.py      # Learning from tasks
+│   ├── self_learning_research_agent.py  # Research with history
+│   └── simple_research_agent.py    # Grounded search
+├── assets/                         # Screenshots
+├── db.py                           # Database configuration
+├── run.py                          # Agent OS entrypoint
+└── README.md
+```
 ## Screenshots
-
-<p align="center">
-  <img src="assets/pal_demo.png" alt="PaL Agent Demo" width="500"/>
-  <br>
-  <em>PaL: Plan and Learn Agent with Session State</em>
-</p>
 
 <p align="center">
   <img src="assets/agentos_2.png" alt="Creative Studio Demo" width="500"/>
@@ -177,27 +179,6 @@ python cookbook/02_examples/04_gemini/agents/pal_agent.py
   <br>
   <em>Product Comparison: Analyze products using URLs</em>
 </p>
-
----
-
-## File Structure
-
-```
-cookbook/02_examples/04_gemini/
-├── agents/
-│   ├── creative_studio_agent.py    # Image generation
-│   ├── pal_agent.py                # Plan and Learn (session state)
-│   ├── product_comparison_agent.py # URL comparison
-│   ├── self_learning_agent.py      # Learning from tasks
-│   ├── self_learning_research_agent.py  # Research with history
-│   └── simple_research_agent.py    # Grounded search
-├── assets/                         # Screenshots
-├── db.py                           # Database configuration
-├── run.py                          # Agent OS entrypoint
-└── README.md
-```
-
----
 
 ## Learn More
 
