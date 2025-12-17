@@ -6,6 +6,8 @@ from agents.self_learning_research_agent import self_learning_research_agent
 from agents.simple_research_agent import simple_research_agent
 from agno.os import AgentOS
 
+from db import gemini_agents_db
+
 # ============================================================================
 # AgentOS Config
 # ============================================================================
@@ -24,6 +26,7 @@ agent_os = AgentOS(
     ],
     config=config_path,
     tracing=True,
+    tracing_db=gemini_agents_db,
 )
 app = agent_os.get_app()
 

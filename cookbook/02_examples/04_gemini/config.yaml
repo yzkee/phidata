@@ -19,3 +19,8 @@ chat:
       - "What is the consensus on AI agents in enterprise production systems?"
       - "Has the consensus on AI agents in production systems changed recently?"
       - "How are companies currently deploying Gemini models in production?"
+
+    self-learning-agent:
+      - "Analyze nvidia and tsla performance and suggest a rule of thumb for when to buy or sell."
+      - "What's a reliable way to evaluate AI stocks today?"
+      - "What prior learnings can I use?"
