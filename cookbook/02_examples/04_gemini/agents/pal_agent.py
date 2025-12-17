@@ -359,10 +359,10 @@ def block_step(
         response += f"**Suggested resolution**: {suggestion}\n"
 
     response += (
-        f"\n**Options**:\n"
-        f"  - Resolve the blocker and call complete_step()\n"
-        f"  - Use update_plan(action='revisit', ...) to try a different approach\n"
-        f"  - Use reset_plan(confirm=True) to start over"
+        "\n**Options**:\n"
+        "  - Resolve the blocker and call complete_step()\n"
+        "  - Use update_plan(action='revisit', ...) to try a different approach\n"
+        "  - Use reset_plan(confirm=True) to start over"
     )
 
     return response
@@ -677,7 +677,7 @@ def run_pal(message: str, session_id: Optional[str] = None, show_state: bool = T
     if show_state:
         state = pal_agent.get_session_state()
         print(f"\n{'─' * 50}")
-        print(f"📊 Session State:")
+        print("📊 Session State:")
         print(f"   Status: {state.get('status', 'no_plan')}")
         if state.get("plan"):
             done = sum(1 for s in state["plan"] if s["status"] == "complete")
