@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Optional
 
 from fastapi import (
     APIRouter,
@@ -8,28 +8,20 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from packaging import version
 
-from agno.agent.agent import Agent
 from agno.db.base import AsyncBaseDb
 from agno.db.migrations.manager import MigrationManager
 from agno.os.auth import get_authentication_dependency
 from agno.os.schema import (
-    AgentSummaryResponse,
     BadRequestResponse,
-    ConfigResponse,
-    InterfaceResponse,
     InternalServerErrorResponse,
-    Model,
     NotFoundResponse,
-    TeamSummaryResponse,
     UnauthenticatedResponse,
     ValidationErrorResponse,
-    WorkflowSummaryResponse,
 )
 from agno.os.settings import AgnoAPISettings
 from agno.os.utils import (
     get_db,
 )
-from agno.team.team import Team
 
 if TYPE_CHECKING:
     from agno.os.app import AgentOS
