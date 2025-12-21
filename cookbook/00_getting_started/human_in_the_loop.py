@@ -138,7 +138,7 @@ Don't save: Raw data, one-off facts, or obvious information.\
 # ============================================================================
 # Create the Agent
 # ============================================================================
-agent = Agent(
+human_in_the_loop_agent = Agent(
     name="Agent with Human in the Loop",
     model=Gemini(id="gemini-3-flash-preview"),
     instructions=instructions,
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     console = Console()
 
     # Ask a question that might trigger a save
-    run_response = agent.run(
+    run_response = human_in_the_loop_agent.run(
         "What's a healthy P/E ratio for tech stocks? Save that insight."
     )
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
                 console.print("[green]✅ Approved[/green]")
 
     # Continue the run with the user's decisions
-    run_response = agent.continue_run(
+    run_response = human_in_the_loop_agent.continue_run(
         run_id=run_response.run_id,
         requirements=run_response.requirements,
     )

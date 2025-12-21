@@ -10,7 +10,7 @@ from agent_with_tools import agent_with_tools
 from agent_with_typed_input_output import agent_with_typed_input_output
 from agno.os import AgentOS
 from custom_tool_for_self_learning import self_learning_agent
-from human_in_the_loop import human_in_the_loop
+from human_in_the_loop import human_in_the_loop_agent
 from multi_agent_team import multi_agent_team
 from sequential_workflow import sequential_workflow
 
@@ -33,7 +33,7 @@ agent_os = AgentOS(
         agent_with_typed_input_output,
         agent_with_memory,
         agent_with_state_management,
-        human_in_the_loop,
+        human_in_the_loop_agent,
         agent_with_guardrails,
     ],
     teams=[multi_agent_team],
