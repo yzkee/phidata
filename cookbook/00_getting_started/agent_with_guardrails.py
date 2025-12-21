@@ -87,7 +87,7 @@ Never share sensitive personal information in responses.\
 # ============================================================================
 # Create the Agent with Guardrails
 # ============================================================================
-agent = Agent(
+agent_with_guardrails = Agent(
     name="Agent with Guardrails",
     model=Gemini(id="gemini-3-flash-preview"),
     instructions=instructions,
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         print(f"{'=' * 60}")
 
         try:
-            agent.print_response(prompt, stream=True)
+            agent_with_guardrails.print_response(prompt, stream=True)
             print("\n✅ Request processed successfully")
         except InputCheckError as e:
             print(f"\n🛑 Blocked: {e.message}")
