@@ -83,10 +83,15 @@ python cookbook/00_getting_started/run.py
 
 Then visit [os.agno.com](https://os.agno.com) and add `http://localhost:7777` as an endpoint.
 
-Note: to run the agent-with-knowledge, remember to load the knowledge base first using:
-```bash
-python cookbook/00_getting_started/agent_search_over_knowledge.py
-```
+Here's how it looks in action — chat with your agents, explore sessions, monitor traces, manage knowledge and memories, all through a beautiful visual UI.
+
+https://github.com/user-attachments/assets/aae0086b-86f6-4939-a0ce-e1ec9b87ba1f
+
+> [!TIP]
+> To run the agent-with-knowledge, remember to load the knowledge base first using:
+> ```bash
+> python cookbook/00_getting_started/agent_search_over_knowledge.py
+> ```
 
 ## Swap Models Anytime
 
