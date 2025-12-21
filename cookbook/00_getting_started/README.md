@@ -74,8 +74,6 @@ python cookbook/00_getting_started/agent_with_tools.py
 
 **That's it.** No Docker, no Postgres — just Python and an API key.
 
----
-
 ## Run via Agent OS
 
 Agent OS provides a web interface for interacting with your agents. Start the server:
@@ -89,8 +87,6 @@ Note: to run the agent-with-knowledge, remember to load the knowledge base first
 ```bash
 python cookbook/00_getting_started/agent_search_over_knowledge.py
 ```
-
----
 
 ## Swap Models Anytime
 
@@ -173,7 +169,5 @@ cookbook/00_getting_started/
 
 - [Agno Documentation](https://docs.agno.com)
 - [Agent OS Overview](https://docs.agno.com/agent-os/overview)
-
----
 
 Built with 💜 by the Agno team
