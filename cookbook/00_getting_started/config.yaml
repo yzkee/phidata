@@ -25,15 +25,6 @@ chat:
       - "Give me a report on Tesla"
       - "How's the outlook for Google?"
 
-    # agent-with-typed-input-output:
-    #   - "Analyze NVDA with deep analysis and include risks"
-    #   - "Give me a quick analysis of Tesla without risks"
-    #   - "Deep dive into Apple with full risk assessment"
-    #   - "Quick summary of AMD"
-    #   - "Analyze Microsoft — deep analysis, include risks"
-    #   - "Give me a quick take on Google"
-    #   - "Full analysis of Meta with all risks"
-
     agent-with-memory:
       - "I'm interested in tech stocks, especially AI companies"
       - "My risk tolerance is madness"
