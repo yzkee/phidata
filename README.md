@@ -37,7 +37,7 @@ New to Agno? Start with the [getting started guide](https://github.com/agno-agi/
 
 Then:
 - Browse the [cookbooks](https://github.com/agno-agi/agno/tree/main/cookbook) for real-world examples
-- Read the [docs](https://docs.agno.com) for the full picture
+- Read the [docs](https://docs.agno.com) to learn more.
 
 ## Resources
 
