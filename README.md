@@ -104,26 +104,26 @@ This isn't a privacy mode or enterprise add-on. It's how Agno works.
 
 ## Features
 
-**Core**
+### Core:
 - Model agnostic — works with OpenAI, Anthropic, Google, local models, whatever
 - Type-safe I/O with `input_schema` and `output_schema`
 - Async-first, built for long-running tasks
 - Natively multimodal (text, images, audio, video, files)
 
-**Memory & Knowledge**
+### Memory & Knowledge:
 - Persistent storage for session history and state
 - User memory that persists across sessions
 - Agentic RAG with 20+ vector stores, hybrid search, reranking
 - Culture — shared long-term memory across agents
 
-**Execution**
+### Execution:
 - Human-in-the-loop (confirmations, approvals, overrides)
 - Guardrails for validation and security
 - Pre/post hooks for the agent lifecycle
 - First-class MCP and A2A support
 - 100+ built-in toolkits
 
-**Production**
+### Production:
 - Ready-to-use FastAPI runtime
 - Integrated control plane UI
 - Evals for accuracy, performance, latency
