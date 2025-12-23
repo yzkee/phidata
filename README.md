@@ -28,7 +28,7 @@ Agno is a multi-agent framework, runtime, and control plane. Use it to build pri
 ## Why Agno?
 
 - **Your cloud, your data:** AgentOS runs entirely in your infrastructure. Zero data leaves your environment.
-- **Production-ready from day one:** Pre-built FastAPI runtime with SSE endpoints. Not a toy that needs rewriting for prod.
+- **Production-ready from day one:** Pre-built FastAPI runtime with SSE endpoints, ready to deploy.
 - **Actually fast:** 529× faster than LangGraph, 24× lower memory. Matters at scale.
 
 ## Getting Started
