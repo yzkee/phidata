@@ -19,24 +19,24 @@
 
 ## What is Agno?
 
-Agno is a multi-agent framework, runtime, and control plane. Use it to build private and secure AI products that run in your cloud.
+Agno is a multi-agent framework, runtime, and control plane. Use it to build private, secure and production-grade AI products that run in your cloud.
 
-- **Build** agents, teams, and workflows with memory, knowledge, guardrails, and 100+ toolkits.
+- **Build** agents, teams, and workflows with memory, knowledge, guardrails and 100+ integrations.
 - **Run** in production with a stateless FastAPI runtime. Horizontally scalable.
 - **Manage** with a control plane that connects directly to your runtime — no data leaves your environment.
 
 ## Why Agno?
 
-- **Your cloud, your data:** AgentOS runs entirely in your infrastructure. Zero data leaves your environment.
-- **Production-ready from day one:** Pre-built FastAPI runtime with SSE endpoints, ready to deploy.
-- **Actually fast:** 529× faster than LangGraph, 24× lower memory. Matters at scale.
+- **Your cloud, your data:** Runs entirely in your infrastructure. Nothing leaves your environment.
+- **Ready for production on day one:** Pre-built FastAPI runtime with SSE endpoints, ready to deploy.
+- **Incredibly fast:** 529× faster than LangGraph, 24× lower memory.
 
 ## Getting Started
 
-New to Agno? Start with the [getting started guide](https://github.com/agno-agi/agno/tree/main/cookbook/00_getting_started). Then:
+Start with the [getting started guide](https://github.com/agno-agi/agno/tree/main/cookbook/00_getting_started), then:
 
 - Browse the [cookbooks](https://github.com/agno-agi/agno/tree/main/cookbook) for real-world examples
-- Read the [docs](https://docs.agno.com) to learn more.
+- Read the [docs](https://docs.agno.com) to learn more
 
 ## Resources
 
