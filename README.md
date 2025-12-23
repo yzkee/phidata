@@ -33,9 +33,8 @@ Agno is a multi-agent framework, runtime, and control plane. Use it to build pri
 
 ## Getting Started
 
-New to Agno? Start with the [getting started guide](https://github.com/agno-agi/agno/tree/main/cookbook/00_getting_started).
+New to Agno? Start with the [getting started guide](https://github.com/agno-agi/agno/tree/main/cookbook/00_getting_started). Then:
 
-Then:
 - Browse the [cookbooks](https://github.com/agno-agi/agno/tree/main/cookbook) for real-world examples
 - Read the [docs](https://docs.agno.com) to learn more.
 
