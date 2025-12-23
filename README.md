@@ -19,7 +19,7 @@
 
 ## What is Agno?
 
-Agno is a multi-agent framework, runtime, and control plane - the full stack for building AI products that run in your cloud.
+Agno is a multi-agent framework, runtime, and control plane. Use it to build private and secure AI products that run in your cloud.
 
 - **Build** agents, teams, and workflows with memory, knowledge, guardrails, and 100+ toolkits.
 - **Run** in production with a stateless FastAPI runtime. Horizontally scalable.
