@@ -1569,6 +1569,7 @@ class Team:
                         tools=_tools,
                         tool_choice=self.tool_choice,
                         tool_call_limit=self.tool_call_limit,
+                        run_response=run_response,
                         send_media_to_model=self.send_media_to_model,
                         compression_manager=self.compression_manager if self.compress_tool_results else None,
                     )
@@ -3392,6 +3393,7 @@ class Team:
             tool_choice=self.tool_choice,
             tool_call_limit=self.tool_call_limit,
             stream_model_response=stream_model_response,
+            run_response=run_response,
             send_media_to_model=self.send_media_to_model,
             compression_manager=self.compression_manager if self.compress_tool_results else None,
         ):
