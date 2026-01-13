@@ -9,7 +9,7 @@
 </div>
 
 <p align="center">
-  Build, run, and manage multi-agent systems.
+  Build, run, manage multi-agent systems.
 </p>
 
 <div align="center">
