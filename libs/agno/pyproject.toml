@@ -350,6 +350,7 @@ demo = [
     "ddgs",
     "fastapi[standard]",
     "google-genai",
+    "matplotlib",
     "mcp",
     "nest_asyncio",
     "openai",
