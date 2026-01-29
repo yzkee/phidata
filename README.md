@@ -9,7 +9,7 @@
 </div>
 
 <p align="center">
-  Build agents that learn.
+  Build multi-agent systems that learn.
 </p>
 
 <div align="center">
