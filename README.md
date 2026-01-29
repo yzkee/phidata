@@ -58,84 +58,23 @@ Agno provides the complete infrastructure for building multi-agent systems that 
 | **Runtime** | Run in production using [AgentOS](https://docs.agno.com/agent-os/introduction) |
 | **Control Plane** | Monitor and manage via the [AgentOS UI](https://os.agno.com) |
 
-## Learn More
+## Get Started
 
 - [Documentation](https://docs.agno.com)
-- [Cookbook](https://github.com/agno-agi/agno/tree/main/cookbook)
-- [AgentOS Railway Template](https://github.com/agno-agi/agentos-railway-template)
-
-## Getting Started
-
-**1. Build your first agent**
-
-```bash
-pip install -U agno openai
-export OPENAI_API_KEY=sk-***
-```
-
-```python
-from agno.agent import Agent
-from agno.models.openai import OpenAIResponses
-
-agent = Agent(model=OpenAIResponses(id="gpt-5.2"))
-agent.print_response("What is Agno?", stream=True)
-```
-
-**2. Add learning**
-
-```python
-from agno.db.sqlite import SqliteDb
-
-agent = Agent(
-    model=OpenAIResponses(id="gpt-5.2"),
-    db=SqliteDb(db_file="tmp/agents.db"),
-    learning=True,
-)
-```
-
-Now your agent remembers users across sessions and accumulates knowledge over time.
-
-**3. Deploy a multi-agent system**
-
-Clone the [AgentOS Railway template](https://github.com/agno-agi/agentos-railway-template) to run a production multi-agent system with Docker locally, then deploy to Railway:
-
-```bash
-git clone https://github.com/agno-agi/agentos-railway-template.git agentos-railway
-cd agentos-railway
-cp example.env .env  # Add your OPENAI_API_KEY
-docker compose up -d --build
-```
-
-Connect to the control plane at [os.agno.com](https://os.agno.com) → Add OS → Local → `http://localhost:8000`
+- [Build Your First Agent](https://docs.agno.com/first-agent)
+- [Build Your First Multi-Agent System](https://docs.agno.com/first-multi-agent-system)
+- [Cookbook with 1000s of examples](https://github.com/agno-agi/agno/tree/main/cookbook)
+- [How to deploy your system to production](https://docs.agno.com/production/overview)
 
 ## Features
 
-**Learning**
-- User profiles that persist across sessions
-- User memories that accumulate over time
-- Learned knowledge that transfers across users
-- Always or agentic learning modes
-
-**Core**
-- Model-agnostic: OpenAI, Anthropic, Google, local models
-- Type-safe I/O with `input_schema` and `output_schema`
-- Async-first, built for long-running tasks
-- Natively multimodal (text, images, audio, video, files)
-
-**Knowledge**
-- Agentic RAG with 20+ vector stores, hybrid search, reranking
-- Persistent storage for session history and state
-
-**Orchestration**
-- Human-in-the-loop (confirmations, approvals, overrides)
-- Guardrails for validation and security
-- First-class MCP and A2A support
-- 100+ built-in toolkits
-
-**Production**
-- Ready-to-use FastAPI runtime
-- Integrated control plane UI
-- Evals for accuracy, performance, latency
+| Category | What you get |
+|----------|--------------|
+| **Core** | Model-agnostic: OpenAI, Anthropic, Google, local models. Type-safe I/O with `input_schema` and `output_schema`. Async-first, built for long-running tasks. Natively multimodal (text, images, audio, video, files). |
+| **Learning** | User profiles that persist across sessions. User memories that accumulate over time. Learned knowledge that transfers across users. Always or agentic learning modes. |
+| **Knowledge** | Agentic RAG with 20+ vector stores, hybrid search, reranking. Persistent storage for session history and state. |
+| **Orchestration** | Human-in-the-loop (confirmations, approvals, overrides). Guardrails for validation and security. First-class MCP and A2A support. 100+ built-in toolkits. |
+| **Production** | Ready-to-use FastAPI runtime. Integrated control plane UI. Evals for accuracy, performance, latency. |
 
 ## IDE Integration
 
