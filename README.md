@@ -24,15 +24,16 @@
 
 ## What is Agno?
 
-**A Python SDK for building agents that learn and improve with every interaction.**
+**A framework for building multi-agent systems that learn and improve with every interaction.**
 
 Most agents are stateless. They reason, respond, forget. Session history helps, but they're exactly as capable on day 1000 as they were on day 1.
 
-Agno agents are different. They remember users across sessions, accumulate knowledge across conversations, and learn from decisions. Insights from one user benefit everyone.
+Agno agents are different. They remember users across sessions, accumulate knowledge across conversations, and learn from decisions. Insights from one user benefit everyone. The system gets smarter over time.
 
 Everything runs in your cloud. Your data never leaves your environment.
 
 ## Quick Example
+
 ```python
 from agno.agent import Agent
 from agno.db.sqlite import SqliteDb
@@ -49,11 +50,63 @@ One line. Your agent now remembers users, accumulates knowledge, and improves ov
 
 ## Production Stack
 
+Agno provides the complete infrastructure for building multi-agent systems that learn:
+
 | Layer | What it does |
 |-------|--------------|
-| **SDK** | Build agents with learning, tools, knowledge, and guardrails |
+| **Framework** | Build agents with learning, tools, knowledge, and guardrails |
 | **Runtime** | Run in production using [AgentOS](https://docs.agno.com/agent-os/introduction) |
 | **Control Plane** | Monitor and manage via the [AgentOS UI](https://os.agno.com) |
+
+## Learn More
+
+- [Documentation](https://docs.agno.com)
+- [Cookbook](https://github.com/agno-agi/agno/tree/main/cookbook)
+- [AgentOS Railway Template](https://github.com/agno-agi/agentos-railway-template)
+
+## Getting Started
+
+**1. Build your first agent**
+
+```bash
+pip install -U agno openai
+export OPENAI_API_KEY=sk-***
+```
+
+```python
+from agno.agent import Agent
+from agno.models.openai import OpenAIResponses
+
+agent = Agent(model=OpenAIResponses(id="gpt-5.2"))
+agent.print_response("What is Agno?", stream=True)
+```
+
+**2. Add learning**
+
+```python
+from agno.db.sqlite import SqliteDb
+
+agent = Agent(
+    model=OpenAIResponses(id="gpt-5.2"),
+    db=SqliteDb(db_file="tmp/agents.db"),
+    learning=True,
+)
+```
+
+Now your agent remembers users across sessions and accumulates knowledge over time.
+
+**3. Deploy a multi-agent system**
+
+Clone the [AgentOS Railway template](https://github.com/agno-agi/agentos-railway-template) to run a production multi-agent system with Docker locally, then deploy to Railway:
+
+```bash
+git clone https://github.com/agno-agi/agentos-railway-template.git agentos-railway
+cd agentos-railway
+cp example.env .env  # Add your OPENAI_API_KEY
+docker compose up -d --build
+```
+
+Connect to the control plane at [os.agno.com](https://os.agno.com) → Add OS → Local → `http://localhost:8000`
 
 ## Features
 
@@ -84,12 +137,6 @@ One line. Your agent now remembers users, accumulates knowledge, and improves ov
 - Integrated control plane UI
 - Evals for accuracy, performance, latency
 
-## Getting Started
-
-1. Follow the [quickstart](https://docs.agno.com/get-started/quickstart)
-2. Browse the [cookbook](https://github.com/agno-agi/agno/tree/main/cookbook)
-3. Read the [docs](https://docs.agno.com)
-
 ## IDE Integration
 
 Add our docs to your AI-enabled editor:
@@ -100,7 +147,7 @@ Also works with VSCode, Windsurf, and similar tools.
 
 ## Contributing
 
-See the [contributing guide](https://github.com/agno-agi/agno/blob/v2.0/CONTRIBUTING.md).
+See the [contributing guide](https://github.com/agno-agi/agno/blob/main/CONTRIBUTING.md).
 
 ## Telemetry
 
