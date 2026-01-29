@@ -60,18 +60,18 @@ Agno provides the complete infrastructure for building multi-agent systems that 
 
 ## Get Started
 
-- [Documentation](https://docs.agno.com)
-- [Build Your First Agent](https://docs.agno.com/first-agent)
-- [Build Your First Multi-Agent System](https://docs.agno.com/first-multi-agent-system)
-- [Cookbook with 1000s of examples](https://github.com/agno-agi/agno/tree/main/cookbook)
-- [How to deploy your system to production](https://docs.agno.com/production/overview)
+1. [Build your first agent](https://docs.agno.com/first-agent)
+2. [Build your first multi-agent system](https://docs.agno.com/first-multi-agent-system)
+3. [Deploy to production](https://docs.agno.com/production/overview)
+
+More: [Docs](https://docs.agno.com) · [Cookbook](https://github.com/agno-agi/agno/tree/main/cookbook)
 
 ## Features
 
 | Category | What you get |
 |----------|--------------|
-| **Core** | Model-agnostic: OpenAI, Anthropic, Google, local models. Type-safe I/O with `input_schema` and `output_schema`. Async-first, built for long-running tasks. Natively multimodal (text, images, audio, video, files). |
 | **Learning** | User profiles that persist across sessions. User memories that accumulate over time. Learned knowledge that transfers across users. Always or agentic learning modes. |
+| **Core** | Model-agnostic: OpenAI, Anthropic, Google, local models. Type-safe I/O with `input_schema` and `output_schema`. Async-first, built for long-running tasks. Natively multimodal (text, images, audio, video, files). |
 | **Knowledge** | Agentic RAG with 20+ vector stores, hybrid search, reranking. Persistent storage for session history and state. |
 | **Orchestration** | Human-in-the-loop (confirmations, approvals, overrides). Guardrails for validation and security. First-class MCP and A2A support. 100+ built-in toolkits. |
 | **Production** | Ready-to-use FastAPI runtime. Integrated control plane UI. Evals for accuracy, performance, latency. |
