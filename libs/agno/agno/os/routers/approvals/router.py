@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from agno.os.routers.approvals.schema import (
     ApprovalCountResponse,
-    ApprovalListResponse,
     ApprovalResolve,
     ApprovalResponse,
 )
