@@ -284,7 +284,7 @@ class AgentOS:
         self._scheduler_enabled = scheduler
         self._scheduler_poll_interval = scheduler_poll_interval
         self._scheduler_base_url = scheduler_base_url
-        if scheduler and not internal_service_token:
+        if self._scheduler_enabled and not internal_service_token:
             import secrets
 
             internal_service_token = secrets.token_urlsafe(32)
