@@ -38,6 +38,7 @@ from agno.os.config import (
 from agno.os.interfaces.base import BaseInterface
 from agno.os.router import get_base_router, get_websocket_router
 from agno.os.routers.agents import get_agent_router
+from agno.os.routers.approvals import get_approval_router
 from agno.os.routers.components import get_components_router
 from agno.os.routers.database import get_database_router
 from agno.os.routers.evals import get_eval_router
@@ -292,6 +293,7 @@ class AgentOS:
         # List of all MCP tools used inside the AgentOS
         self.mcp_tools: List[Any] = []
         self._mcp_app: Optional[Any] = None
+        self._scheduler_manager: Optional[Any] = None
 
         self._initialize_agents()
         self._initialize_teams()
@@ -307,6 +309,17 @@ class AgentOS:
             from agno.api.os import OSLaunch, log_os_telemetry
 
             log_os_telemetry(launch=OSLaunch(os_id=self.id, data=self._get_telemetry_data()))
+
+    @property
+    def scheduler(self) -> Any:
+        """Get a ScheduleManager for this AgentOS instance."""
+        if not hasattr(self, "_scheduler_manager") or self._scheduler_manager is None:
+            if self.db is None:
+                raise RuntimeError("No database configured -- cannot create ScheduleManager")
+            from agno.scheduler.manager import ScheduleManager
+
+            self._scheduler_manager = ScheduleManager(self.db)
+        return self._scheduler_manager
 
     def _add_agent_os_to_lifespan_function(self, lifespan):
         """
@@ -372,9 +385,10 @@ class AgentOS:
             updated_routers.append(get_components_router(os_db=self.db, registry=self.registry))
         if self.registry is not None:
             updated_routers.append(get_registry_router(registry=self.registry))
-        # Add schedule router if scheduler is enabled
-        if self.scheduler and self.db is not None:
+        # Add schedule and approval routers if a db is available
+        if self.db is not None:
             updated_routers.append(get_schedule_router(os_db=self.db, settings=self.settings))
+            updated_routers.append(get_approval_router(os_db=self.db, settings=self.settings))
 
         # Clear all previously existing routes
         app.router.routes = [
@@ -697,9 +711,10 @@ class AgentOS:
             routers.append(get_components_router(os_db=self.db, registry=self.registry))
         if self.registry is not None:
             routers.append(get_registry_router(registry=self.registry))
-        # Add schedule router if scheduler is enabled
-        if self.scheduler and self.db is not None:
+        # Add schedule and approval routers if a db is available
+        if self.db is not None:
             routers.append(get_schedule_router(os_db=self.db, settings=self.settings))
+            routers.append(get_approval_router(os_db=self.db, settings=self.settings))
 
         for router in routers:
             self._add_router(fastapi_app, router)

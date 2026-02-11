@@ -60,6 +60,7 @@ class AsyncPostgresDb(AsyncBaseDb):
         learnings_table: Optional[str] = None,
         schedules_table: Optional[str] = None,
         schedule_runs_table: Optional[str] = None,
+        approvals_table: Optional[str] = None,
         create_schema: bool = True,
     ):
         """
@@ -117,6 +118,7 @@ class AsyncPostgresDb(AsyncBaseDb):
             learnings_table=learnings_table,
             schedules_table=schedules_table,
             schedule_runs_table=schedule_runs_table,
+            approvals_table=approvals_table,
         )
 
         _engine: Optional[AsyncEngine] = db_engine
@@ -175,6 +177,7 @@ class AsyncPostgresDb(AsyncBaseDb):
             (self.learnings_table_name, "learnings"),
             (self.schedules_table_name, "schedules"),
             (self.schedule_runs_table_name, "schedule_runs"),
+            (self.approvals_table_name, "approvals"),
         ]
 
         for table_name, table_type in tables_to_create:
@@ -401,6 +404,14 @@ class AsyncPostgresDb(AsyncBaseDb):
                 create_table_if_not_found=create_table_if_not_found,
             )
             return self.schedule_runs_table
+
+        if table_type == "approvals":
+            self.approvals_table = await self._get_or_create_table(
+                table_name=self.approvals_table_name,
+                table_type="approvals",
+                create_table_if_not_found=create_table_if_not_found,
+            )
+            return self.approvals_table
 
         raise ValueError(f"Unknown table type: {table_type}")
 
@@ -3139,22 +3150,23 @@ class AsyncPostgresDb(AsyncBaseDb):
             if table is None:
                 return [], 0
             async with self.async_session_factory() as sess:
-                # Get total count
-                count_stmt = select(func.count()).select_from(table)
+                # Build base query with filters
+                base_query = select(table)
                 if enabled is not None:
-                    count_stmt = count_stmt.where(table.c.enabled == enabled)
+                    base_query = base_query.where(table.c.enabled == enabled)
+
+                # Get total count
+                count_stmt = select(func.count()).select_from(base_query.alias())
                 count_result = await sess.execute(count_stmt)
                 total_count = count_result.scalar() or 0
 
-                # Get paginated results
+                # Calculate offset from page
                 offset = (page - 1) * limit
-                stmt = select(table)
-                if enabled is not None:
-                    stmt = stmt.where(table.c.enabled == enabled)
-                stmt = stmt.order_by(table.c.created_at.desc()).limit(limit).offset(offset)
+
+                # Get paginated results
+                stmt = base_query.order_by(table.c.created_at.desc()).limit(limit).offset(offset)
                 result = await sess.execute(stmt)
-                schedules = [dict(row._mapping) for row in result.fetchall()]
-                return schedules, total_count
+                return [dict(row._mapping) for row in result.fetchall()], total_count
         except Exception as e:
             log_debug(f"Error listing schedules: {e}")
             return [], 0
@@ -3300,7 +3312,7 @@ class AsyncPostgresDb(AsyncBaseDb):
     async def get_schedule_runs(
         self,
         schedule_id: str,
-        limit: int = 100,
+        limit: int = 20,
         page: int = 1,
     ) -> Tuple[List[Dict[str, Any]], int]:
         try:
@@ -3313,8 +3325,10 @@ class AsyncPostgresDb(AsyncBaseDb):
                 count_result = await sess.execute(count_stmt)
                 total_count = count_result.scalar() or 0
 
-                # Get paginated results
+                # Calculate offset from page
                 offset = (page - 1) * limit
+
+                # Get paginated results
                 stmt = (
                     select(table)
                     .where(table.c.schedule_id == schedule_id)
@@ -3323,8 +3337,151 @@ class AsyncPostgresDb(AsyncBaseDb):
                     .offset(offset)
                 )
                 result = await sess.execute(stmt)
-                runs = [dict(row._mapping) for row in result.fetchall()]
-                return runs, total_count
+                return [dict(row._mapping) for row in result.fetchall()], total_count
         except Exception as e:
             log_debug(f"Error getting schedule runs: {e}")
             return [], 0
+
+    # -- Approval methods --
+
+    async def create_approval(self, approval_data: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            table = await self._get_table(table_type="approvals", create_table_if_not_found=True)
+            if table is None:
+                raise RuntimeError("Failed to get or create approvals table")
+            data = {**approval_data}
+            now = int(time.time())
+            data.setdefault("created_at", now)
+            data.setdefault("updated_at", now)
+            async with self.async_session_factory() as sess:
+                async with sess.begin():
+                    await sess.execute(table.insert().values(**data))
+            return data
+        except Exception as e:
+            log_error(f"Error creating approval: {e}")
+            raise
+
+    async def get_approval(self, approval_id: str) -> Optional[Dict[str, Any]]:
+        try:
+            table = await self._get_table(table_type="approvals")
+            if table is None:
+                return None
+            async with self.async_session_factory() as sess:
+                result = await sess.execute(select(table).where(table.c.id == approval_id))
+                row = result.fetchone()
+                return dict(row._mapping) if row else None
+        except Exception as e:
+            log_debug(f"Error getting approval: {e}")
+            return None
+
+    async def get_approvals(
+        self,
+        status: Optional[str] = None,
+        source_type: Optional[str] = None,
+        approval_type: Optional[str] = None,
+        pause_type: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        team_id: Optional[str] = None,
+        workflow_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        schedule_id: Optional[str] = None,
+        run_id: Optional[str] = None,
+        limit: int = 100,
+        page: int = 1,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        try:
+            table = await self._get_table(table_type="approvals")
+            if table is None:
+                return [], 0
+            async with self.async_session_factory() as sess:
+                stmt = select(table)
+                count_stmt = select(func.count()).select_from(table)
+                if status is not None:
+                    stmt = stmt.where(table.c.status == status)
+                    count_stmt = count_stmt.where(table.c.status == status)
+                if source_type is not None:
+                    stmt = stmt.where(table.c.source_type == source_type)
+                    count_stmt = count_stmt.where(table.c.source_type == source_type)
+                if approval_type is not None:
+                    stmt = stmt.where(table.c.approval_type == approval_type)
+                    count_stmt = count_stmt.where(table.c.approval_type == approval_type)
+                if pause_type is not None:
+                    stmt = stmt.where(table.c.pause_type == pause_type)
+                    count_stmt = count_stmt.where(table.c.pause_type == pause_type)
+                if agent_id is not None:
+                    stmt = stmt.where(table.c.agent_id == agent_id)
+                    count_stmt = count_stmt.where(table.c.agent_id == agent_id)
+                if team_id is not None:
+                    stmt = stmt.where(table.c.team_id == team_id)
+                    count_stmt = count_stmt.where(table.c.team_id == team_id)
+                if workflow_id is not None:
+                    stmt = stmt.where(table.c.workflow_id == workflow_id)
+                    count_stmt = count_stmt.where(table.c.workflow_id == workflow_id)
+                if user_id is not None:
+                    stmt = stmt.where(table.c.user_id == user_id)
+                    count_stmt = count_stmt.where(table.c.user_id == user_id)
+                if schedule_id is not None:
+                    stmt = stmt.where(table.c.schedule_id == schedule_id)
+                    count_stmt = count_stmt.where(table.c.schedule_id == schedule_id)
+                if run_id is not None:
+                    stmt = stmt.where(table.c.run_id == run_id)
+                    count_stmt = count_stmt.where(table.c.run_id == run_id)
+                total = (await sess.execute(count_stmt)).scalar() or 0
+
+                # Calculate offset from page
+                offset = (page - 1) * limit
+
+                stmt = stmt.order_by(table.c.created_at.desc()).limit(limit).offset(offset)
+                results = (await sess.execute(stmt)).fetchall()
+                return [dict(row._mapping) for row in results], total
+        except Exception as e:
+            log_debug(f"Error listing approvals: {e}")
+            return [], 0
+
+    async def update_approval(
+        self, approval_id: str, expected_status: Optional[str] = None, **kwargs: Any
+    ) -> Optional[Dict[str, Any]]:
+        try:
+            table = await self._get_table(table_type="approvals")
+            if table is None:
+                return None
+            kwargs["updated_at"] = int(time.time())
+            async with self.async_session_factory() as sess:
+                async with sess.begin():
+                    stmt = table.update().where(table.c.id == approval_id)
+                    if expected_status is not None:
+                        stmt = stmt.where(table.c.status == expected_status)
+                    result = await sess.execute(stmt.values(**kwargs))
+                    if result.rowcount == 0:
+                        return None
+            return await self.get_approval(approval_id)
+        except Exception as e:
+            log_debug(f"Error updating approval: {e}")
+            return None
+
+    async def delete_approval(self, approval_id: str) -> bool:
+        try:
+            table = await self._get_table(table_type="approvals")
+            if table is None:
+                return False
+            async with self.async_session_factory() as sess:
+                async with sess.begin():
+                    result = await sess.execute(table.delete().where(table.c.id == approval_id))
+                    return result.rowcount > 0
+        except Exception as e:
+            log_debug(f"Error deleting approval: {e}")
+            return False
+
+    async def get_pending_approval_count(self, user_id: Optional[str] = None) -> int:
+        try:
+            table = await self._get_table(table_type="approvals")
+            if table is None:
+                return 0
+            async with self.async_session_factory() as sess:
+                stmt = select(func.count()).select_from(table).where(table.c.status == "pending")
+                if user_id is not None:
+                    stmt = stmt.where(table.c.user_id == user_id)
+                return (await sess.execute(stmt)).scalar() or 0
+        except Exception as e:
+            log_debug(f"Error counting approvals: {e}")
+            return 0

@@ -2137,6 +2137,7 @@ class Model(ABC):
                         tool_name=fc.function.name,
                         tool_args=fc.arguments,
                         requires_confirmation=True,
+                        approval_type=fc.function.approval_type,
                         external_execution_silent=fc.function.external_execution_silent,
                     )
                 )
@@ -2156,6 +2157,7 @@ class Model(ABC):
                         tool_name=fc.function.name,
                         tool_args=fc.arguments,
                         requires_user_input=True,
+                        approval_type=fc.function.approval_type,
                         user_input_schema=user_input_schema,
                         external_execution_silent=fc.function.external_execution_silent,
                     )
@@ -2206,6 +2208,7 @@ class Model(ABC):
                         tool_name=fc.function.name,
                         tool_args=fc.arguments,
                         external_execution_required=True,
+                        approval_type=fc.function.approval_type,
                         external_execution_silent=fc.function.external_execution_silent,
                     )
                 )
@@ -2301,6 +2304,7 @@ class Model(ABC):
                         tool_name=fc.function.name,
                         tool_args=fc.arguments,
                         requires_confirmation=True,
+                        approval_type=fc.function.approval_type,
                         external_execution_silent=fc.function.external_execution_silent,
                     )
                 )
@@ -2319,6 +2323,7 @@ class Model(ABC):
                         tool_name=fc.function.name,
                         tool_args=fc.arguments,
                         requires_user_input=True,
+                        approval_type=fc.function.approval_type,
                         user_input_schema=user_input_schema,
                         external_execution_silent=fc.function.external_execution_silent,
                     )
@@ -2373,6 +2378,7 @@ class Model(ABC):
                         tool_name=fc.function.name,
                         tool_args=fc.arguments,
                         external_execution_required=True,
+                        approval_type=fc.function.approval_type,
                         external_execution_silent=fc.function.external_execution_silent,
                     )
                 )

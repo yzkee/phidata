@@ -239,6 +239,33 @@ SCHEDULE_TABLE_SCHEMA = {
     ],
 }
 
+APPROVAL_TABLE_SCHEMA = {
+    "id": {"type": String, "primary_key": True, "nullable": False},
+    "run_id": {"type": String, "nullable": False, "index": True},
+    "session_id": {"type": String, "nullable": False, "index": True},
+    "status": {"type": String, "nullable": False, "index": True},
+    "source_type": {"type": String, "nullable": False, "index": True},
+    "approval_type": {"type": String, "nullable": True, "index": True},
+    "pause_type": {"type": String, "nullable": False, "index": True},
+    "tool_name": {"type": String, "nullable": True},
+    "tool_args": {"type": JSON, "nullable": True},
+    "expires_at": {"type": BigInteger, "nullable": True},
+    "agent_id": {"type": String, "nullable": True, "index": True},
+    "team_id": {"type": String, "nullable": True, "index": True},
+    "workflow_id": {"type": String, "nullable": True, "index": True},
+    "user_id": {"type": String, "nullable": True, "index": True},
+    "schedule_id": {"type": String, "nullable": True, "index": True},
+    "schedule_run_id": {"type": String, "nullable": True, "index": True},
+    "source_name": {"type": String, "nullable": True},
+    "requirements": {"type": JSON, "nullable": True},
+    "context": {"type": JSON, "nullable": True},
+    "resolution_data": {"type": JSON, "nullable": True},
+    "resolved_by": {"type": String, "nullable": True},
+    "resolved_at": {"type": BigInteger, "nullable": True},
+    "created_at": {"type": BigInteger, "nullable": False, "index": True},
+    "updated_at": {"type": BigInteger, "nullable": True},
+}
+
 
 def _get_schedule_runs_table_schema(schedules_table_name: str = "agno_schedules") -> dict[str, Any]:
     """Get the schedule runs table schema with a foreign key to the schedules table."""
@@ -302,6 +329,7 @@ def get_table_schema_definition(
         "component_links": COMPONENT_LINKS_TABLE_SCHEMA,
         "learnings": LEARNINGS_TABLE_SCHEMA,
         "schedules": SCHEDULE_TABLE_SCHEMA,
+        "approvals": APPROVAL_TABLE_SCHEMA,
     }
     schema = schemas.get(table_type, {})
 
