@@ -162,11 +162,16 @@ async def _aread_session(
     team: "Team", session_id: str, session_type: SessionType = SessionType.TEAM, user_id: Optional[str] = None
 ) -> Optional[Union[TeamSession, WorkflowSession]]:
     """Get a Session from the database."""
+    from agno.team._init import _has_async_db
+
     try:
         if not team.db:
             raise ValueError("Db not initialized")
-        team.db = cast(AsyncBaseDb, team.db)
-        session = await team.db.get_session(session_id=session_id, session_type=session_type, user_id=user_id)
+        if _has_async_db(team):
+            team.db = cast(AsyncBaseDb, team.db)
+            session = await team.db.get_session(session_id=session_id, session_type=session_type, user_id=user_id)
+        else:
+            session = team.db.get_session(session_id=session_id, session_type=session_type, user_id=user_id)  # type: ignore[assignment]
         return session  # type: ignore
     except Exception as e:
         log_warning(f"Error getting session from db: {e}")
@@ -187,11 +192,15 @@ def _upsert_session(team: "Team", session: TeamSession) -> Optional[TeamSession]
 
 async def _aupsert_session(team: "Team", session: TeamSession) -> Optional[TeamSession]:
     """Upsert a Session into the database."""
+    from agno.team._init import _has_async_db
 
     try:
         if not team.db:
             raise ValueError("Db not initialized")
-        return await team.db.upsert_session(session=session)  # type: ignore
+        if _has_async_db(team):
+            return await team.db.upsert_session(session=session)  # type: ignore
+        else:
+            return team.db.upsert_session(session=session)  # type: ignore
     except Exception as e:
         log_warning(f"Error upserting session into db: {e}")
     return None
