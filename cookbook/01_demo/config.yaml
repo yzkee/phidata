@@ -36,6 +36,14 @@ chat:
       - "Tell me about yourself"
       - "Draft a reply to: 'Hi, loved the demo. Can we schedule a follow-up to discuss pricing?'"
       - "Write a cold outreach email to a VP of Engineering about our AI platform"
+    claw:
+      - "Tell me about yourself"
+      - "Read the README.md and summarize what this project does"
+      - "Find all Python files and show me the project structure"
+    reasoning-claw:
+      - "Tell me about yourself"
+      - "Read the test files and identify any gaps in test coverage"
+      - "Refactor this code to improve readability and add error handling"
     research-team:
       - "Research Anthropic - company overview, key people, products, and recent news"
       - "Deep research on the AI agents market - key players, trends, and opportunities"

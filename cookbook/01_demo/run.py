@@ -8,6 +8,7 @@ Serves all demo agents, teams, and workflows via AgentOS.
 from pathlib import Path
 
 from agents.ace import ace
+from agents.claw import claw, reasoning_claw
 from agents.dash import dash, reasoning_dash
 from agents.dex import dex
 from agents.pal import pal
@@ -34,6 +35,8 @@ agent_os = AgentOS(
         reasoning_seek,
         dex,
         ace,
+        claw,
+        reasoning_claw,
     ],
     teams=[research_team, support_team],
     workflows=[daily_brief_workflow, meeting_prep_workflow],
