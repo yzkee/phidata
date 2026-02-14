@@ -18,7 +18,6 @@ from agno.learn import (
 )
 from agno.models.openai import OpenAIResponses
 from agno.tools.mcp import MCPTools
-from agno.tools.reasoning import ReasoningTools
 from agno.tools.sql import SQLTools
 from db import create_knowledge, db_url, get_postgres_db
 

@@ -1,4 +1,4 @@
 """Claw - Coding agent."""
 
 from .agent import claw as claw
-from .agent import reasoning_claw as reasoning_claw
+from .watchdog import quality_watchdog as quality_watchdog

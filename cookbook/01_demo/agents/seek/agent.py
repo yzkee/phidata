@@ -23,7 +23,6 @@ from agno.learn import (
 from agno.models.openai import OpenAIResponses
 from agno.tools.mcp import MCPTools
 from agno.tools.parallel import ParallelTools
-from agno.tools.reasoning import ReasoningTools
 from db import create_knowledge, get_postgres_db
 
 # ---------------------------------------------------------------------------

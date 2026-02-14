@@ -14,15 +14,17 @@ from agents.seek import seek
 from agno.os import AgentOS
 from db import get_postgres_db
 from registry import registry
+from teams.hub import hub_team
 from teams.research import research_team
 from workflows.daily_brief import daily_brief_workflow
+from workflows.github_digest import github_digest_agent
 from workflows.meeting_prep import meeting_prep_workflow
 
 config_path = str(Path(__file__).parent.joinpath("config.yaml"))
 
 agent_os = AgentOS(
-    agents=[claw, dash, scout, seek],
-    teams=[research_team],
+    agents=[claw, dash, scout, seek, github_digest_agent],
+    teams=[research_team, hub_team],
     workflows=[daily_brief_workflow, meeting_prep_workflow],
     tracing=True,
     scheduler=True,

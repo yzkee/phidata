@@ -1,6 +1,6 @@
 # Agno Demo
 
-6 self-learning agents, 2 teams, and 2 workflows served via AgentOS. Each agent learns from interactions and improves with every use.
+4 agents, 2 teams, 2 workflows, and 1 scheduled digest served via AgentOS. Each agent learns from interactions and improves with every use.
 
 ## Architecture
 
@@ -14,36 +14,28 @@ All agents share a common foundation:
 
 ## Agents
 
+### Claw - Personal AI Assistant & Coding Agent
+
+Personal AI assistant with coding tools, calendar, email, and three-tier governance. Demonstrates `CodingTools`, `ReasoningTools`, audit-wrapped tools (`@approval(type="audit")`), approval-gated tools (`@approval`), input guardrails (`BaseGuardrail`, `PromptInjectionGuardrail`), output guardrails (secrets leak detection), and audit hooks.
+
 ### Dash - Self-Learning Data Agent
 
 Analyzes an F1 racing dataset via SQL. Provides insights and context, not just raw query results. Remembers column quirks, date formats, and successful queries across sessions.
 
 ### Scout - Self-Learning Context Agent
 
-Finds information (context) across company S3 storage using grep-like search and full document reads. Knows what sources exist and routes queries to the right bucket. Learns intent from repeated use.
-
-### Pal - Personal Agent that Learns
-
-Captures and retrieves personal knowledge: notes, bookmarks, people, meetings, projects. Uses DuckDB for structured content and the learning system for schema and research findings.
+Finds information (context) across company S3 storage using grep-like search and full document reads. Knows what sources exist and routes queries to the right bucket. Learns intent from repeated use. Also serves as a support knowledge agent for internal FAQs.
 
 ### Seek - Deep Research Agent
 
 Conducts exhaustive multi-source research and produces structured, well-sourced reports. Follows a 4-phase methodology: scope, gather, analyze, synthesize.
 
-### Dex - Relationship Intelligence Agent
-
-Builds living profiles of people you interact with. Tracks interactions, maps connections, and prepares meeting briefs with full context.
-
-### Ace - Response Agent
-
-Drafts replies to emails, messages, and questions. Learns your tone, communication style, and preferences for different contexts (client vs. team vs. exec).
-
 ## Teams
 
 | Team | Members | Mode | Purpose |
 |------|---------|------|---------|
-| **Research Team** | Seek + Scout + Dex | Coordinate | Breaks research into dimensions (external, internal, people) and delegates to specialists. Synthesizes findings into a comprehensive report. |
-| **Support Team** | Ace + Scout + Dash | Route | Routes questions to the right specialist: data/metrics to Dash, internal docs to Scout, drafting to Ace. |
+| **Hub Team (Claw)** | Dash + Scout + Seek | Route | Single entry point -- Claw handles coding directly and delegates data questions to Dash, doc questions to Scout, research to Seek. Uses `TeamMode.route`, team-level `LearningMachine`, guardrails, audit hooks, and background quality watchdog. |
+| **Research Team** | Seek + Scout | Coordinate | Breaks research into dimensions (external, internal) and delegates to specialists. Synthesizes findings into a comprehensive report. |
 
 ## Workflows
 
@@ -51,6 +43,7 @@ Drafts replies to emails, messages, and questions. Learns your tone, communicati
 |----------|-------|---------|
 | **Daily Brief** | 3 parallel gatherers (calendar, email, news) then 1 synthesizer | Morning briefing with priorities, schedule highlights, inbox summary, and industry news. Uses mock calendar/email data and live Parallel web search for news. |
 | **Meeting Prep** | Parse meeting, then 3 parallel researchers (attendees, internal docs, external context), then 1 synthesizer | Deep preparation with attendee context, key data points, talking points, and anticipated questions. Uses mock meeting data and live Parallel web search. |
+| **GitHub Digest** | Single agent with GithubTools + SlackTools | Proactive digest of GitHub activity (PRs, issues, commits). Designed for AgentOS scheduler. Requires `GITHUB_ACCESS_TOKEN`. |
 
 ## Getting Started
 
@@ -75,6 +68,7 @@ source .venvs/demo/bin/activate
 ```bash
 export OPENAI_API_KEY="..."      # Required for all agents
 export EXA_API_KEY="..."         # Optional because Exa MCP is currently free
+export GITHUB_ACCESS_TOKEN="..." # Optional, for GitHub Digest agent
 ```
 
 ### 5. Load data and knowledge
@@ -102,7 +96,7 @@ python -m run
 
 ### Evals
 
-16 test cases covering all agents, both teams, and both workflows. Uses string-matching validation with `all` or `any` match modes.
+Test cases covering all agents, teams, and workflows. Uses string-matching validation with `all` or `any` match modes.
 
 ```bash
 # Run all evals

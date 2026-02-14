@@ -17,6 +17,7 @@ Test:
 import re
 import subprocess
 from datetime import datetime, timedelta
+from inspect import iscoroutinefunction
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -50,9 +51,9 @@ agent_db = get_postgres_db(contents_table="claw_contents")
 claw_knowledge = create_knowledge("Claw Knowledge", "claw_knowledge")
 claw_learnings = create_knowledge("Claw Learnings", "claw_learnings")
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # TRUST: Input Guardrails (pre_hooks)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 
 class DangerousCommandGuardrail(BaseGuardrail):
@@ -85,9 +86,9 @@ class DangerousCommandGuardrail(BaseGuardrail):
         self.check(run_input)
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # TRUST: Output Guardrails (post_hooks)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 # Patterns that indicate leaked secrets in agent output
 _SECRET_PATTERNS = [
@@ -120,24 +121,32 @@ def secrets_leak_guardrail(run_output: RunOutput) -> None:
             )
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # TRUST: Audit Hook (tool_hooks)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 
-def audit_hook(
+async def audit_hook(
     function_name: str, function_call: Callable, arguments: Dict[str, Any]
 ) -> Any:
-    """Log all tool calls for audit trail."""
+    """Log all tool calls for audit trail.
+
+    Async because in the tool_hooks chain, function_call is next_func (an async
+    wrapper). Must check iscoroutinefunction to handle both sync and async paths.
+    See cookbook/91_tools/tool_hooks/tool_hook.py for the canonical pattern.
+    """
     logger.info(f"[Claw Audit] Tool: {function_name} | Args: {arguments}")
-    result = function_call(**arguments)
+    if iscoroutinefunction(function_call):
+        result = await function_call(**arguments)
+    else:
+        result = function_call(**arguments)
     logger.info(f"[Claw Audit] Tool: {function_name} | Complete")
     return result
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GOVERNANCE: Free Tools (no approval needed)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 
 @tool
@@ -188,9 +197,9 @@ def search_emails(
     )
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GOVERNANCE: User-Approval Tools (pause for user confirmation)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 
 @approval
@@ -264,9 +273,9 @@ def delete_files(pattern: str, directory: str = ".") -> str:
     return result
 
 
-# ===========================================================================
+# ---------------------------------------------------------------------------
 # GOVERNANCE: Admin-Approval Tools (critical operations)
-# ===========================================================================
+# ---------------------------------------------------------------------------
 
 
 @approval
@@ -367,17 +376,23 @@ Solve problems independently first. Read files, check context, trace through
 code paths before asking for clarification. Only ask when you genuinely cannot
 proceed without the answer.
 
-## Governance: Three Levels of Tool Access
+## Governance: Four Levels of Tool Access
 
-Your tools have three levels of access. This is by design -- not all agent
+Your tools have four levels of access. This is by design -- not all agent
 decisions are equal.
 
 ### Free (no approval needed)
 These tools you can use at any time:
-- `read_file`, `edit_file`, `write_file`, `run_shell` -- core coding tools
+- `read_file`, `write_file` -- core coding tools (read-only operations)
 - `grep`, `find`, `ls` -- codebase exploration
 - `check_calendar` -- look up calendar events
 - `search_emails` -- search past emails
+- `think` -- structured reasoning (ReasoningTools)
+
+### Audit (non-blocking, logged for compliance)
+These tools execute immediately but create an audit trail:
+- `audit_edit_file` -- file edits (logged for review)
+- `audit_run_shell` -- shell commands (logged for review)
 
 ### User Approval (agent pauses for confirmation)
 These tools pause and wait for the user to approve before executing:
@@ -393,13 +408,16 @@ When you call an approval-required tool, the system automatically pauses.
 Explain what you intend to do and why, so the approver can make an informed
 decision.
 
-## Coding Workflow
+## Coding Workflow (Overnight Code Agent Pattern)
+
+When the user describes a coding task (feature request, bug fix, refactoring):
 
 ### 1. Understand First
 - Always read a file before editing it. No exceptions.
 - Use `grep` and `find` to orient yourself in an unfamiliar codebase.
 - Use `ls` to understand directory structure.
 - Read related files to understand context: imports, callers, tests.
+- Use `think` from ReasoningTools for complex debugging chains.
 
 ### 2. Plan the Change
 - Think through what needs to change and why before touching anything.
@@ -407,15 +425,35 @@ decision.
 - Consider edge cases, error handling, and existing tests.
 
 ### 3. Make Surgical Edits
-- Use `edit_file` for precise, minimal changes. Never rewrite an entire file
-  when a targeted edit will do.
+- Use `audit_edit_file` for edits (creates an audit trail automatically).
 - Include enough surrounding context in `old_text` to ensure a unique match.
 - If an edit fails (no match or multiple matches), re-read the file and adjust.
 
 ### 4. Verify
 - Run tests after making changes. Always.
 - If there are no tests, suggest or write them.
-- Use `run_shell` for git operations, linting, type checking, builds.
+- Use `audit_run_shell` for git operations, linting, type checking, builds.
+
+### 5. Report
+- Summarize what you changed, what tests pass, and any remaining work.
+
+## CI/CD Auto-Fix Pattern
+
+When the user pastes a CI error or build failure:
+1. Read the error carefully -- identify the file, line, and error type
+2. Use `think` to trace the root cause through the code path
+3. Read the failing file and surrounding context
+4. Fix the issue with a targeted `audit_edit_file`
+5. Run the relevant test with `audit_run_shell` to verify
+6. Report: what broke, why, and how you fixed it
+
+## File Routing (when part of a team)
+
+When the user uploads or references a file:
+- CSV/data files -> suggest delegating to Dash for analysis
+- PDFs/documents -> suggest delegating to Scout for knowledge extraction
+- Code files/archives -> handle directly with CodingTools
+- Research topics -> suggest delegating to Seek
 
 ## Shell is Your Swiss Army Knife
 
@@ -458,12 +496,46 @@ for this codebase or this type of task.
 # Free tier: coding tools + read-only personal assistant tools
 # User tier: send_email, delete_files
 # Admin tier: deploy_code, execute_migration
+# ---------------------------------------------------------------------------
+# GOVERNANCE: Audit-Wrapped CodingTools
+# ---------------------------------------------------------------------------
+# Read-only CodingTools are free. Write operations (edit_file, run_shell)
+# get @approval(type="audit") for non-blocking compliance logging.
+_coding = CodingTools(all=True)
+
+
+@approval(type="audit")
+@tool(requires_confirmation=True)
+def audit_edit_file(
+    path: str,
+    old_text: str,
+    new_text: str,
+) -> str:
+    """Edit a file by replacing old_text with new_text. Creates an audit record."""
+    return _coding.edit_file(path=path, old_text=old_text, new_text=new_text)
+
+
+@approval(type="audit")
+@tool(requires_confirmation=True)
+def audit_run_shell(command: str, timeout: int = 30) -> str:
+    """Run a shell command. Creates an audit record for compliance."""
+    return _coding.run_shell(command=command, timeout=timeout)
+
+
 base_tools: list = [
-    CodingTools(all=True),
+    # CodingTools: read-only tools are free, write tools have audit wrappers
+    _coding,
+    audit_edit_file,
+    audit_run_shell,
+    # Reasoning
+    ReasoningTools(),
+    # Personal assistant
     check_calendar,
     search_emails,
+    # User-approval tools
     send_email,
     delete_files,
+    # Admin-approval tools
     deploy_code,
     execute_migration,
 ]
@@ -502,6 +574,9 @@ claw = Agent(
     markdown=True,
 )
 
+# ---------------------------------------------------------------------------
+# Run Agent
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     test_cases = [
         "Tell me about yourself",
