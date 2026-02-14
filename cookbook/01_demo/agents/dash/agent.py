@@ -176,15 +176,6 @@ dash = Agent(
     markdown=True,
 )
 
-# Reasoning variant - adds think/analyze tools
-reasoning_dash = dash.deep_copy(
-    update={
-        "id": "reasoning-dash",
-        "name": "Reasoning Dash",
-        "tools": base_tools + [ReasoningTools(add_instructions=True)],
-    }
-)
-
 if __name__ == "__main__":
     test_cases = [
         "Who won the most races in 2019?",

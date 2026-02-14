@@ -158,15 +158,6 @@ seek = Agent(
     markdown=True,
 )
 
-# Reasoning variant for complex multi-step research
-reasoning_seek = seek.deep_copy(
-    update={
-        "id": "reasoning-seek",
-        "name": "Reasoning Seek",
-        "tools": base_tools + [ReasoningTools(add_instructions=True)],
-    }
-)
-
 if __name__ == "__main__":
     test_cases = [
         "Tell me about yourself",

@@ -502,15 +502,6 @@ claw = Agent(
     markdown=True,
 )
 
-# Reasoning variant for complex multi-step tasks
-reasoning_claw = claw.deep_copy(
-    update={
-        "id": "reasoning-claw",
-        "name": "Reasoning Claw",
-        "tools": base_tools + [ReasoningTools(add_instructions=True)],
-    }
-)
-
 if __name__ == "__main__":
     test_cases = [
         "Tell me about yourself",

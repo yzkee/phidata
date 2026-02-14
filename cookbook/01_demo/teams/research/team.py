@@ -10,7 +10,6 @@ Test:
     python -m teams.research.team
 """
 
-from agents.dex import dex
 from agents.scout import scout
 from agents.seek import seek
 from agno.models.openai import OpenAIResponses
@@ -25,7 +24,7 @@ research_team = Team(
     name="Research Team",
     model=OpenAIResponses(id="gpt-5.2"),
     db=get_postgres_db(contents_table="research_team_contents"),
-    members=[seek, scout, dex],
+    members=[seek, scout],
     instructions=[
         "You lead a research team with three specialists:",
         "- Seek: Deep web researcher. Use for external research, company analysis, and topic deep-dives.",

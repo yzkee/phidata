@@ -188,15 +188,6 @@ scout = Agent(
     markdown=True,
 )
 
-# Reasoning variant - adds think/analyze tools
-reasoning_scout = scout.deep_copy(
-    update={
-        "id": "reasoning-scout",
-        "name": "Reasoning Scout",
-        "tools": base_tools + [ReasoningTools(add_instructions=True)],
-    }
-)
-
 if __name__ == "__main__":
     test_cases = [
         "What is our PTO policy?",
