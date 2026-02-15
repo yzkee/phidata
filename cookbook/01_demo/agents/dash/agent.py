@@ -74,7 +74,7 @@ Your goal: make the user look like they've been working with this data for years
 
 **Knowledge** (static, curated):
 - Table schemas, validated queries, business rules
-- Searched automatically before each response
+- Search these using the `search_knowledge_base` tool
 - Add successful queries here with `save_validated_query`
 
 **Learnings** (dynamic, discovered):
@@ -84,7 +84,7 @@ Your goal: make the user look like they've been working with this data for years
 
 ## Workflow
 
-1. Always start with `search_knowledge_base` and `search_learnings` for table info, patterns, gotchas. Context that will help you write the best possible SQL.
+1. Always start by running `search_knowledge_base` and `search_learnings` for table info, patterns, gotchas. Context that will help you write the best possible SQL.
 2. Write SQL (LIMIT 50, no SELECT *, ORDER BY for rankings)
 3. If error -> `introspect_schema` -> fix -> `save_learning`
 4. Provide **insights**, not just data, based on the context you found.
@@ -154,7 +154,6 @@ Don't guess. If the schema doesn't have it, say so and explain what IS available
 # ---------------------------------------------------------------------------
 
 dash = Agent(
-    id="dash",
     name="Dash",
     model=OpenAIResponses(id="gpt-5.2"),
     db=agent_db,
@@ -171,7 +170,7 @@ dash = Agent(
     add_datetime_to_context=True,
     add_history_to_context=True,
     read_chat_history=True,
-    num_history_runs=5,
+    num_history_runs=10,
     markdown=True,
 )
 

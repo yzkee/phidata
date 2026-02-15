@@ -1,4 +1,3 @@
-import difflib
 import functools
 import shlex
 import subprocess
@@ -120,6 +119,11 @@ class CodingTools(Toolkit):
         self.max_lines = max_lines
         self.max_bytes = max_bytes
         self.shell_timeout = shell_timeout
+        self._temp_files: List[str] = []
+
+        import atexit
+
+        atexit.register(self._cleanup_temp_files)
 
         has_exploration = all or enable_grep or enable_find or enable_ls
 
@@ -184,6 +188,15 @@ class CodingTools(Toolkit):
             was_truncated = True
 
         return result, was_truncated, total_lines
+
+    def _cleanup_temp_files(self) -> None:
+        """Remove temporary files created during shell output truncation."""
+        for path in self._temp_files:
+            try:
+                Path(path).unlink(missing_ok=True)
+            except OSError:
+                pass
+        self._temp_files.clear()
 
     def _check_command(self, command: str) -> Optional[str]:
         """Check if a shell command references paths outside base_dir.
@@ -351,6 +364,8 @@ class CodingTools(Toolkit):
             resolved_path.write_text(new_contents, encoding="utf-8")
 
             # Generate unified diff
+            import difflib
+
             old_lines = contents.splitlines(keepends=True)
             new_lines = new_contents.splitlines(keepends=True)
 
@@ -462,6 +477,7 @@ class CodingTools(Toolkit):
                 )
                 tmp.write(output)
                 tmp.close()
+                self._temp_files.append(tmp.name)
                 truncated_output += f"\n[Output truncated: {total_lines} lines total. Full output saved to: {tmp.name}]"
 
             return header + truncated_output
@@ -519,7 +535,6 @@ class CodingTools(Toolkit):
             if include:
                 cmd.extend(["--include", include])
 
-            cmd.extend(["-m", str(limit)])
             cmd.append(pattern)
             cmd.append(str(resolved_path))
 
@@ -542,6 +557,12 @@ class CodingTools(Toolkit):
             # Make paths relative to base_dir
             base_str = str(self.base_dir) + "/"
             output = output.replace(base_str, "")
+
+            # Enforce global match limit
+            output_lines = output.split("\n")
+            if len(output_lines) > limit:
+                output = "\n".join(output_lines[:limit])
+                output += f"\n[Results limited to {limit} matches]"
 
             # Apply truncation
             output, was_truncated, total_lines = self._truncate_output(output)
