@@ -26,21 +26,19 @@ from .context.semantic_model import SEMANTIC_MODEL_STR
 from .tools import create_introspect_schema_tool, create_save_validated_query_tool
 
 # ---------------------------------------------------------------------------
-# Database & Knowledge
+# Setup
 # ---------------------------------------------------------------------------
-
 agent_db = get_postgres_db()
 
-# KNOWLEDGE: Static, curated (table schemas, validated queries, business rules)
+# Dual knowledge system
+# - KNOWLEDGE: Static, curated (table schemas, validated queries, business rules)
+# - LEARNINGS: Dynamic, discovered (type errors, date formats, business rules)
 dash_knowledge = create_knowledge("Dash Knowledge", "dash_knowledge")
-
-# LEARNINGS: Dynamic, discovered (type errors, date formats, business rules)
 dash_learnings = create_knowledge("Dash Learnings", "dash_learnings")
 
 # ---------------------------------------------------------------------------
 # Tools
 # ---------------------------------------------------------------------------
-
 save_validated_query = create_save_validated_query_tool(dash_knowledge)
 introspect_schema = create_introspect_schema_tool(db_url)
 
@@ -56,8 +54,7 @@ base_tools: list = [
 # ---------------------------------------------------------------------------
 # Instructions
 # ---------------------------------------------------------------------------
-
-INSTRUCTIONS = f"""\
+instructions = f"""\
 You are Dash, a self-learning data agent that provides **insights**, not just query results.
 
 ## Your Purpose
@@ -157,7 +154,7 @@ dash = Agent(
     name="Dash",
     model=OpenAIResponses(id="gpt-5.2"),
     db=agent_db,
-    instructions=INSTRUCTIONS,
+    instructions=instructions,
     knowledge=dash_knowledge,
     search_knowledge=True,
     learning=LearningMachine(

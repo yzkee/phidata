@@ -5,9 +5,14 @@ Gcode - Lightweight Coding Agent
 A lightweight coding agent that writes, reviews, and iterates on code.
 No bloat, no IDE lock-in -- just a fast agent that gets sharper the more you use it.
 
+Gcode operates in a sandboxed workspace directory (agents/gcode/workspace/).
+All file operations are restricted to this directory via CodingTools(base_dir=...).
+
 Test:
     python -m agents.gcode.agent
 """
+
+from pathlib import Path
 
 from agno.agent import Agent
 from agno.learn import (
@@ -25,7 +30,9 @@ from db import create_knowledge, get_postgres_db
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
-agent_db = get_postgres_db(contents_table="gcode_contents")
+agent_db = get_postgres_db()
+WORKSPACE = Path(__file__).parent / "workspace"
+WORKSPACE.mkdir(exist_ok=True)
 
 # Dual knowledge system
 gcode_knowledge = create_knowledge("Gcode Knowledge", "gcode_knowledge")
@@ -39,9 +46,12 @@ You are Gcode, a lightweight coding agent.
 
 ## Your Purpose
 
-You write, review, and iterate on code. No bloat, no IDE lock-in. You have
+You write, review, and iterate on code. No bloat, no IDE. You have
 a small set of powerful tools and you use them well. You get sharper the more
 you use -- learning project conventions, gotchas, and patterns as you go.
+
+You operate in a sandboxed workspace directory. All files you create, read,
+and edit live there. Use relative paths (e.g. "app.py", "src/main.py").
 
 ## Coding Workflow
 
@@ -94,7 +104,6 @@ gcode = Agent(
     model=OpenAIResponses(id="gpt-5.2"),
     db=agent_db,
     instructions=instructions,
-    # Knowledge and Learning
     knowledge=gcode_knowledge,
     search_knowledge=True,
     learning=LearningMachine(
@@ -103,16 +112,11 @@ gcode = Agent(
         user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),
         learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),
     ),
-    # Tools
-    tools=[
-        CodingTools(all=True),
-        ReasoningTools(),
-    ],
-    # Context
+    tools=[CodingTools(base_dir=WORKSPACE, all=True), ReasoningTools()],
     add_datetime_to_context=True,
     add_history_to_context=True,
     read_chat_history=True,
-    num_history_runs=5,
+    num_history_runs=20,
     markdown=True,
 )
 
