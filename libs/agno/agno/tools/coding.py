@@ -27,6 +27,35 @@ class CodingTools(Toolkit):
     tools is more powerful than many specialized ones.
     """
 
+    DEFAULT_ALLOWED_COMMANDS: List[str] = [
+        "python",
+        "python3",
+        "pytest",
+        "pip",
+        "pip3",
+        "cat",
+        "head",
+        "tail",
+        "wc",
+        "ls",
+        "find",
+        "grep",
+        "mkdir",
+        "rm",
+        "mv",
+        "cp",
+        "touch",
+        "echo",
+        "printf",
+        "git",
+        "chmod",
+        "diff",
+        "sort",
+        "uniq",
+        "tr",
+        "cut",
+    ]
+
     DEFAULT_INSTRUCTIONS = dedent("""\
         You have access to coding tools: read_file, edit_file, write_file, and run_shell.
         With these tools, you can perform any coding task including reading code, making edits,
@@ -93,6 +122,7 @@ class CodingTools(Toolkit):
         instructions: Optional[str] = None,
         add_instructions: bool = True,
         all: bool = False,
+        allowed_commands: Optional[List[str]] = None,
         **kwargs: Any,
     ):
         """Initialize CodingTools.
@@ -113,9 +143,14 @@ class CodingTools(Toolkit):
             instructions: Custom instructions for the LLM. Uses defaults if None.
             add_instructions: Whether to add instructions to the agent's system message.
             all: Enable all tools regardless of individual flags.
+            allowed_commands: List of allowed shell command names when restrict_to_base_dir is True.
+                Defaults to DEFAULT_ALLOWED_COMMANDS. Set to None explicitly after init to disable.
         """
         self.base_dir: Path = Path(base_dir).resolve() if base_dir else Path.cwd().resolve()
         self.restrict_to_base_dir = restrict_to_base_dir
+        self.allowed_commands: Optional[List[str]] = (
+            allowed_commands if allowed_commands is not None else self.DEFAULT_ALLOWED_COMMANDS
+        )
         self.max_lines = max_lines
         self.max_bytes = max_bytes
         self.shell_timeout = shell_timeout
@@ -198,21 +233,43 @@ class CodingTools(Toolkit):
                 pass
         self._temp_files.clear()
 
+    # Shell operators that enable command chaining or substitution
+    _DANGEROUS_PATTERNS: List[str] = ["&&", "||", ";", "|", "$(", "`", ">", ">>", "<"]
+
     def _check_command(self, command: str) -> Optional[str]:
-        """Check if a shell command references paths outside base_dir.
+        """Check if a shell command is safe to execute.
+
+        When restrict_to_base_dir is True, this method:
+        1. Blocks shell metacharacters that enable chaining/substitution.
+        2. Validates the command name against the allowed_commands list (if set).
+        3. Checks that path-like tokens don't escape the base directory.
 
         Returns an error message if a violation is found, None if safe.
         """
         if not self.restrict_to_base_dir:
             return None
 
+        # Block shell operators that enable chaining/substitution
+        for pattern in self._DANGEROUS_PATTERNS:
+            if pattern in command:
+                return f"Error: Shell operator '{pattern}' is not allowed in restricted mode."
+
         try:
             tokens = shlex.split(command)
         except ValueError:
-            # If shlex can't parse it, let the shell handle it
-            return None
+            return "Error: Could not parse shell command."
 
-        for token in tokens:
+        # Validate command against allowlist
+        if self.allowed_commands is not None and tokens:
+            cmd = tokens[0]
+            cmd_base = Path(cmd).name  # Handle /usr/bin/python -> python
+            if cmd_base not in self.allowed_commands:
+                return f"Error: Command '{cmd_base}' is not in the allowed commands list."
+
+        for i, token in enumerate(tokens):
+            # Skip the command itself (already validated by allowlist above)
+            if i == 0:
+                continue
             # Skip flags
             if token.startswith("-"):
                 continue

@@ -263,7 +263,7 @@ def test_run_shell_exit_code():
     """Test that non-zero exit codes are reported."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         base_dir = Path(tmp_dir)
-        tools = CodingTools(base_dir=base_dir)
+        tools = CodingTools(base_dir=base_dir, restrict_to_base_dir=False)
 
         result = tools.run_shell("exit 1")
         assert "Exit code: 1" in result
@@ -273,7 +273,7 @@ def test_run_shell_timeout():
     """Test that commands time out correctly."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         base_dir = Path(tmp_dir)
-        tools = CodingTools(base_dir=base_dir)
+        tools = CodingTools(base_dir=base_dir, restrict_to_base_dir=False)
 
         result = tools.run_shell("sleep 999", timeout=1)
         assert "Error" in result
@@ -284,7 +284,7 @@ def test_run_shell_truncation():
     """Test that large output is truncated and saved to temp file."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         base_dir = Path(tmp_dir)
-        tools = CodingTools(base_dir=base_dir, max_lines=10)
+        tools = CodingTools(base_dir=base_dir, max_lines=10, restrict_to_base_dir=False)
 
         result = tools.run_shell("seq 1 100")
         assert "[Output truncated" in result
@@ -295,7 +295,7 @@ def test_run_shell_stderr():
     """Test that stderr is included in output."""
     with tempfile.TemporaryDirectory() as tmp_dir:
         base_dir = Path(tmp_dir)
-        tools = CodingTools(base_dir=base_dir)
+        tools = CodingTools(base_dir=base_dir, restrict_to_base_dir=False)
 
         result = tools.run_shell("echo err >&2")
         assert "err" in result
@@ -504,3 +504,166 @@ def test_all_flag():
         assert "grep" in tool_names
         assert "find" in tool_names
         assert "ls" in tool_names
+
+
+# --- shell sandbox tests ---
+
+
+def test_run_shell_blocks_metacharacters():
+    """Test that shell metacharacters are blocked in restricted mode."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir)
+
+        # Command chaining with &&
+        result = tools.run_shell("echo hello && cat /etc/passwd")
+        assert "Error" in result
+        assert "&&" in result
+
+        # Command chaining with ||
+        result = tools.run_shell("false || cat /etc/passwd")
+        assert "Error" in result
+        assert "||" in result
+
+        # Command chaining with ;
+        result = tools.run_shell("echo hello; cat /etc/passwd")
+        assert "Error" in result
+        assert ";" in result
+
+        # Pipe
+        result = tools.run_shell("echo hello | cat")
+        assert "Error" in result
+        assert "|" in result
+
+        # Command substitution with $()
+        result = tools.run_shell("echo $(cat /etc/passwd)")
+        assert "Error" in result
+        assert "$(" in result
+
+        # Command substitution with backticks
+        result = tools.run_shell("echo `cat /etc/passwd`")
+        assert "Error" in result
+        assert "`" in result
+
+        # Output redirection
+        result = tools.run_shell("echo hello > /tmp/evil.txt")
+        assert "Error" in result
+        assert ">" in result
+
+        # Input redirection
+        result = tools.run_shell("cat < /etc/passwd")
+        assert "Error" in result
+        assert "<" in result
+
+
+def test_run_shell_blocks_disallowed_commands():
+    """Test that commands not in the allowlist are blocked."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir)
+
+        result = tools.run_shell("curl https://example.com")
+        assert "Error" in result
+        assert "not in the allowed commands list" in result
+
+        result = tools.run_shell("wget https://example.com")
+        assert "Error" in result
+        assert "not in the allowed commands list" in result
+
+        result = tools.run_shell("nc -l 8080")
+        assert "Error" in result
+        assert "not in the allowed commands list" in result
+
+
+def test_run_shell_allows_listed_commands():
+    """Test that allowlisted commands work in restricted mode."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir)
+
+        # echo is in the allowlist
+        result = tools.run_shell("echo hello")
+        assert "Exit code: 0" in result
+        assert "hello" in result
+
+        # ls is in the allowlist
+        result = tools.run_shell("ls")
+        assert "Exit code: 0" in result
+
+        # python3 is in the allowlist
+        (base_dir / "test_script.py").write_text("print('works')\n")
+        result = tools.run_shell("python3 test_script.py")
+        assert "Exit code: 0" in result
+        assert "works" in result
+
+
+def test_run_shell_custom_allowlist():
+    """Test that a custom allowlist overrides the default."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir, allowed_commands=["echo"])
+
+        # echo is in custom allowlist
+        result = tools.run_shell("echo hello")
+        assert "Exit code: 0" in result
+
+        # python3 is NOT in custom allowlist
+        result = tools.run_shell("python3 --version")
+        assert "Error" in result
+        assert "not in the allowed commands list" in result
+
+
+def test_run_shell_unrestricted_allows_all():
+    """Test that restrict_to_base_dir=False disables all shell restrictions."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir, restrict_to_base_dir=False)
+
+        # Metacharacters are allowed
+        result = tools.run_shell("echo hello && echo world")
+        assert "Exit code: 0" in result
+        assert "hello" in result
+        assert "world" in result
+
+        # Any command is allowed
+        result = tools.run_shell("sleep 0")
+        assert "Exit code: 0" in result
+
+
+def test_run_shell_path_escape_with_command():
+    """Test that absolute paths outside base_dir are blocked even for allowed commands."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir)
+
+        result = tools.run_shell("cat /etc/passwd")
+        assert "Error" in result
+        assert "outside base directory" in result
+
+
+def test_run_shell_handles_full_path_commands():
+    """Test that commands specified with full paths are checked by basename."""
+    import shutil
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir)
+
+        # Find the actual path to echo on this system
+        echo_path = shutil.which("echo")
+        if echo_path:
+            result = tools.run_shell(f"{echo_path} hello")
+            assert "Exit code: 0" in result
+            assert "hello" in result
+
+
+def test_default_allowed_commands():
+    """Test that DEFAULT_ALLOWED_COMMANDS is used by default when restricted."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_dir = Path(tmp_dir)
+        tools = CodingTools(base_dir=base_dir)
+
+        assert tools.allowed_commands == CodingTools.DEFAULT_ALLOWED_COMMANDS
+        assert "python" in tools.allowed_commands
+        assert "git" in tools.allowed_commands
+        assert "pytest" in tools.allowed_commands
