@@ -2,6 +2,15 @@
 
 4 agents, 2 teams, 2 workflows, and 1 scheduled digest served via AgentOS. Each agent learns from interactions and improves with every use.
 
+## Overview
+
+| Agent | Purpose | Key Features |
+|-------|---------|--------------|
+| **Claw** | Personal AI assistant and coding agent | Governance (3-tier approval), guardrails, audit hooks, CodingTools |
+| **Dash** | Self-learning data analyst (F1 dataset) | SQL tools, semantic model, business context, LearningMachine |
+| **Scout** | Enterprise knowledge navigator (S3 docs) | S3 connector, intent routing, source registry, LearningMachine |
+| **Seek** | Deep research agent | MCP tools (Exa), 4-phase methodology, ParallelTools |
+
 ## Architecture
 
 All agents share a common foundation:
@@ -14,9 +23,13 @@ All agents share a common foundation:
 
 ## Agents
 
-### Claw - Personal AI Assistant & Coding Agent
+### Claw - Personal AI Assistant and Coding Agent
 
-Personal AI assistant with coding tools, calendar, email, and three-tier governance. Demonstrates `CodingTools`, `ReasoningTools`, audit-wrapped tools (`@approval(type="audit")`), approval-gated tools (`@approval`), input guardrails (`BaseGuardrail`, `PromptInjectionGuardrail`), output guardrails (secrets leak detection), and audit hooks.
+Demonstrates the three pillars of the agentic contract:
+
+- **Governance**: Three-tier tool approval -- free (read files, check calendar), user-confirmation (send email, delete files), and admin (deploy code, run migrations)
+- **Trust**: Input guardrails (prompt injection detection, dangerous command blocking), output guardrails (secrets leak detection), and audit hooks on all tool calls
+- **Tools**: CodingTools (read, edit, write, shell, grep, find, ls), calendar, email, deployments, migrations
 
 ### Dash - Self-Learning Data Agent
 
@@ -24,7 +37,7 @@ Analyzes an F1 racing dataset via SQL. Provides insights and context, not just r
 
 ### Scout - Self-Learning Context Agent
 
-Finds information (context) across company S3 storage using grep-like search and full document reads. Knows what sources exist and routes queries to the right bucket. Learns intent from repeated use. Also serves as a support knowledge agent for internal FAQs.
+Finds information across company S3 storage using grep-like search and full document reads. Knows what sources exist and routes queries to the right bucket. Learns intent from repeated use. Also serves as a support knowledge agent for internal FAQs.
 
 ### Seek - Deep Research Agent
 
@@ -41,8 +54,8 @@ Conducts exhaustive multi-source research and produces structured, well-sourced 
 
 | Workflow | Steps | Purpose |
 |----------|-------|---------|
-| **Daily Brief** | 3 parallel gatherers (calendar, email, news) then 1 synthesizer | Morning briefing with priorities, schedule highlights, inbox summary, and industry news. Uses mock calendar/email data and live Parallel web search for news. |
-| **Meeting Prep** | Parse meeting, then 3 parallel researchers (attendees, internal docs, external context), then 1 synthesizer | Deep preparation with attendee context, key data points, talking points, and anticipated questions. Uses mock meeting data and live Parallel web search. |
+| **Daily Brief** | 3 parallel gatherers (calendar, email, news) then 1 synthesizer | Morning briefing with priorities, schedule highlights, inbox summary, and industry news. Uses mock calendar/email data and live web search for news. |
+| **Meeting Prep** | Parse meeting, then 3 parallel researchers (attendees, internal docs, external context), then 1 synthesizer | Deep preparation with attendee context, key data points, talking points, and anticipated questions. Uses mock meeting data and live web search. |
 | **GitHub Digest** | Single agent with GithubTools + SlackTools | Proactive digest of GitHub activity (PRs, issues, commits). Designed for AgentOS scheduler. Requires `GITHUB_ACCESS_TOKEN`. |
 
 ## Getting Started
@@ -67,7 +80,7 @@ source .venvs/demo/bin/activate
 ### 4. Export environment variables
 ```bash
 export OPENAI_API_KEY="..."      # Required for all agents
-export EXA_API_KEY="..."         # Optional because Exa MCP is currently free
+export EXA_API_KEY="..."         # Optional (Exa MCP is currently free)
 export GITHUB_ACCESS_TOKEN="..." # Optional, for GitHub Digest agent
 ```
 
@@ -88,13 +101,11 @@ python -m run
 ### 7. Connect via AgentOS
 
 - Open [os.agno.com](https://os.agno.com) in your browser
-- Click on "Add AgentOS"
+- Click "Add AgentOS"
 - Add `http://localhost:7777` as an endpoint
 - Click "Connect"
-- You should see the demo agents and workflows
-- Interact with the agents and workflows via the web interface
 
-### Evals
+## Evals
 
 Test cases covering all agents, teams, and workflows. Uses string-matching validation with `all` or `any` match modes.
 
@@ -104,6 +115,7 @@ python -m evals.run_evals
 
 # Filter by agent
 python -m evals.run_evals --agent dash
+python -m evals.run_evals --agent claw
 
 # Filter by category
 python -m evals.run_evals --category dash_basic
@@ -111,3 +123,23 @@ python -m evals.run_evals --category dash_basic
 # Verbose mode (show full responses on failure)
 python -m evals.run_evals --verbose
 ```
+
+## Agno Features Demonstrated
+
+| Feature | Where |
+|---------|-------|
+| LearningMachine (AGENTIC mode) | All 4 agents |
+| Governance / Approval | Claw (3-tier: free, user, admin) |
+| Input Guardrails | Claw (prompt injection, dangerous commands) |
+| Output Guardrails | Claw (secrets leak detection) |
+| Audit Hooks | Claw (tool call logging) |
+| CodingTools | Claw |
+| SQL Tools | Dash |
+| MCP Tools | Seek (Exa), Scout (Exa), Dash (Exa) |
+| ParallelTools | Seek, workflows |
+| Knowledge (hybrid search) | All agents |
+| Teams (route mode) | Hub Team |
+| Teams (coordinate mode) | Research Team |
+| Workflows (parallel steps) | Daily Brief, Meeting Prep |
+| Scheduled Tasks | GitHub Digest |
+| AgentOS | run.py |
