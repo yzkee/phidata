@@ -13,8 +13,6 @@ from agno.learn import (
     LearnedKnowledgeConfig,
     LearningMachine,
     LearningMode,
-    UserMemoryConfig,
-    UserProfileConfig,
 )
 from agno.models.openai import OpenAIResponses
 from agno.tools.mcp import MCPTools
@@ -201,11 +199,10 @@ scout = Agent(
     search_knowledge=True,
     learning=LearningMachine(
         knowledge=scout_learnings,
-        user_profile=UserProfileConfig(mode=LearningMode.AGENTIC),
-        user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),
         learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),
     ),
     tools=base_tools,
+    enable_agentic_memory=True,
     add_datetime_to_context=True,
     add_history_to_context=True,
     read_chat_history=True,
