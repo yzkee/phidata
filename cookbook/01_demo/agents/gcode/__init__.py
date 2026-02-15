@@ -1,4 +1,3 @@
-"""Claw - Coding agent."""
+"""Gcode - Lightweight coding agent."""
 
-from .agent import claw as claw
-from .watchdog import quality_watchdog as quality_watchdog
+from .agent import gcode as gcode

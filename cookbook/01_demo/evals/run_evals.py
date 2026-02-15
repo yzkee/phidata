@@ -43,14 +43,18 @@ console = Console()
 
 def get_component(agent_id: str):
     """Get the agent, team, or workflow instance by ID."""
-    if agent_id == "claw":
-        from agents.claw import claw
+    if agent_id == "gcode":
+        from agents.gcode import gcode
 
-        return claw
+        return gcode
     elif agent_id == "dash":
         from agents.dash import dash
 
         return dash
+    elif agent_id == "pal":
+        from agents.pal import pal
+
+        return pal
     elif agent_id == "scout":
         from agents.scout import scout
 
@@ -67,10 +71,6 @@ def get_component(agent_id: str):
         from workflows.daily_brief import daily_brief_workflow
 
         return daily_brief_workflow
-    elif agent_id == "meeting-prep":
-        from workflows.meeting_prep import meeting_prep_workflow
-
-        return meeting_prep_workflow
     else:
         raise ValueError(f"Unknown component: {agent_id}")
 

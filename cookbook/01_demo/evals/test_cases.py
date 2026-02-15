@@ -23,19 +23,19 @@ class TestCase:
 # Agent Test Cases
 # ---------------------------------------------------------------------------
 
-CLAW_TESTS: list[TestCase] = [
+GCODE_TESTS: list[TestCase] = [
     TestCase(
-        agent="claw",
+        agent="gcode",
         question="Tell me about yourself",
-        expected_strings=["Claw", "coding", "assistant"],
-        category="claw_identity",
+        expected_strings=["Gcode", "coding", "agent"],
+        category="gcode_identity",
         match_mode="any",
     ),
     TestCase(
-        agent="claw",
+        agent="gcode",
         question="List the files in the current directory",
         expected_strings=["run.py", "README"],
-        category="claw_coding",
+        category="gcode_coding",
         match_mode="any",
     ),
 ]
@@ -58,6 +58,23 @@ DASH_TESTS: list[TestCase] = [
         question="Which driver has won the most world championships?",
         expected_strings=["Schumacher", "7"],
         category="dash_aggregation",
+    ),
+]
+
+PAL_TESTS: list[TestCase] = [
+    TestCase(
+        agent="pal",
+        question="Tell me about yourself",
+        expected_strings=["Pal", "personal"],
+        category="pal_identity",
+        match_mode="any",
+    ),
+    TestCase(
+        agent="pal",
+        question="Save a note: Remember to review the Q1 roadmap by Friday",
+        expected_strings=["note", "save"],
+        category="pal_notes",
+        match_mode="any",
     ),
 ]
 
@@ -122,39 +139,29 @@ DAILY_BRIEF_TESTS: list[TestCase] = [
     ),
 ]
 
-MEETING_PREP_TESTS: list[TestCase] = [
-    TestCase(
-        agent="meeting-prep",
-        question="Prepare me for my 10 AM Product Strategy Review meeting",
-        expected_strings=["Product Strategy", "talking point"],
-        category="meeting_prep",
-        match_mode="any",
-    ),
-]
-
 # ---------------------------------------------------------------------------
 # All test cases combined
 # ---------------------------------------------------------------------------
 
 ALL_TEST_CASES: list[TestCase] = (
-    CLAW_TESTS
+    GCODE_TESTS
     + DASH_TESTS
+    + PAL_TESTS
     + SCOUT_TESTS
     + SEEK_TESTS
     + RESEARCH_TEAM_TESTS
     + DAILY_BRIEF_TESTS
-    + MEETING_PREP_TESTS
 )
 
 CATEGORIES = sorted(set(tc.category for tc in ALL_TEST_CASES))
 
 # Agent-specific test collections for targeted evaluation
 AGENT_TESTS: dict[str, list[TestCase]] = {
-    "claw": CLAW_TESTS,
+    "gcode": GCODE_TESTS,
     "dash": DASH_TESTS,
+    "pal": PAL_TESTS,
     "scout": SCOUT_TESTS,
     "seek": SEEK_TESTS,
     "research-team": RESEARCH_TEAM_TESTS,
     "daily-brief": DAILY_BRIEF_TESTS,
-    "meeting-prep": MEETING_PREP_TESTS,
 }

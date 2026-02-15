@@ -18,7 +18,7 @@
 
 | Team | Description |
 |------|-------------|
-| **Research Team** | Dash, Seek and Scout working together as a team. |
+| **Research Team** | Seek and Scout working together as a team. |
 
 ### Workflow
 
@@ -110,9 +110,9 @@ python -m evals.run_evals --verbose
 |---------|-------|
 | LearningMachine (AGENTIC mode) | All 5 agents |
 | CodingTools | Gcode |
-| SQL Tools | Dash |
-| MCP Tools | Seek (Exa), Scout (Exa), Dash (Exa) |
-| ParallelTools | Seek, Daily Brief workflow |
+| ReasoningTools | Gcode |
+| SQL Tools | Dash, Pal |
+| MCP Tools | Seek (Exa), Scout (Exa), Dash (Exa), Pal (Exa) |
 | Knowledge (hybrid search) | All agents |
 | Persistent Memory | Pal, Seek |
 | Teams (coordinate mode) | Research Team |
