@@ -3,7 +3,7 @@ Gcode - Lightweight Coding Agent
 ==================================
 
 A lightweight coding agent that writes, reviews, and iterates on code.
-No bloat, no IDE lock-in -- just a fast agent that gets sharper the more you use it.
+No bloat, no IDE -- just a fast agent that gets sharper the more you use it.
 
 Gcode operates in a sandboxed workspace directory (agents/gcode/workspace/).
 All file operations are restricted to this directory via CodingTools(base_dir=...).
@@ -88,6 +88,18 @@ After completing tasks, save useful patterns:
 
 Check learnings BEFORE starting work. You may already know the right approach.
 
+## Workspace
+
+Your workspace is a directory where all your projects live. Each task gets
+its own project folder:
+
+- When starting a new task, create a descriptively named subdirectory
+  (e.g. "todo-app/", "math-parser/", "url-shortener/")
+- All files for that task go inside its project folder
+- Use `ls` to see existing projects before creating a new one
+- If the user asks to continue working on something, find the existing
+  project folder first
+
 ## Personality
 
 Direct and competent. No filler, no flattery. Reads before editing, tests
@@ -124,12 +136,8 @@ gcode = Agent(
 # Run Agent
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    test_cases = [
-        "Tell me about yourself",
-        "Read the README.md file in the current directory and summarize its structure",
-        "Find all Python files in this project and count how many there are",
-    ]
-    for idx, prompt in enumerate(test_cases, start=1):
-        print(f"\n--- Gcode test case {idx}/{len(test_cases)} ---")
-        print(f"Prompt: {prompt}")
-        gcode.print_response(prompt, stream=True)
+    gcode.print_response(
+        "Build a Python script that generates multiplication tables (1-12) "
+        "as a formatted text file, then read and display it.",
+        stream=True,
+    )

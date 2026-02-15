@@ -2,6 +2,12 @@
 Dash - Self-Learning Data Agent
 =================================
 
+A self-learning data agent that queries a database and provides insights.
+
+Dash uses a dual knowledge system:
+- KNOWLEDGE: static curated knowledge (table schemas, validated queries, business rules)
+- LEARNINGS: dynamic learnings it discovers through use (type gotchas, date formats, column quirks).
+
 Test:
     python -m agents.dash.agent
 """
@@ -41,14 +47,18 @@ dash_learnings = create_knowledge("Dash Learnings", "dash_learnings")
 # ---------------------------------------------------------------------------
 save_validated_query = create_save_validated_query_tool(dash_knowledge)
 introspect_schema = create_introspect_schema_tool(db_url)
+EXA_API_KEY = getenv("EXA_API_KEY", "")
+EXA_MCP_URL = (
+    f"https://mcp.exa.ai/mcp?exaApiKey={EXA_API_KEY}&tools="
+    "web_search_exa,"
+    "get_code_context_exa"
+)
 
-base_tools: list = [
+dash_tools: list = [
     SQLTools(db_url=db_url),
-    save_validated_query,
     introspect_schema,
-    MCPTools(
-        url=f"https://mcp.exa.ai/mcp?exaApiKey={getenv('EXA_API_KEY', '')}&tools=web_search_exa"
-    ),
+    save_validated_query,
+    MCPTools(url=EXA_MCP_URL),
 ]
 
 # ---------------------------------------------------------------------------
@@ -149,7 +159,6 @@ Don't guess. If the schema doesn't have it, say so and explain what IS available
 # ---------------------------------------------------------------------------
 # Create Agent
 # ---------------------------------------------------------------------------
-
 dash = Agent(
     name="Dash",
     model=OpenAIResponses(id="gpt-5.2"),
@@ -163,7 +172,7 @@ dash = Agent(
         user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),
         learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),
     ),
-    tools=base_tools,
+    tools=dash_tools,
     add_datetime_to_context=True,
     add_history_to_context=True,
     read_chat_history=True,
@@ -171,6 +180,9 @@ dash = Agent(
     markdown=True,
 )
 
+# ---------------------------------------------------------------------------
+# Run Agent
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     test_cases = [
         "Who won the most races in 2019?",

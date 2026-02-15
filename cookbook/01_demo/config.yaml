@@ -1,15 +1,20 @@
 chat:
   quick_prompts:
     # ----- Agents -----
-    claw:
-      - "Read agents/claw/agent.py and explain the approval tiers"
-      - "Find all TODO comments in this project"
-      - "What meetings do I have today?"
-
     dash:
       - "Who won the most F1 races in 2019?"
       - "Show the points gap between Hamilton and Verstappen by season"
       - "Which circuits had the most DNFs in 2020?"
+
+    gcode:
+      - "Build a command-line todo app: add, list, done, delete. Persist to JSON. Write pytest tests and run them."
+      - "Create a Python library that parses and evaluates math expressions like '2 + 3 * (4 - 1)', with tests."
+      - "Build a URL shortener with an in-memory store: shorten, resolve, list stats. Include a demo script that exercises all features."
+
+    pal:
+      - "Save a note: quarterly planning meeting moved to Friday 3pm"
+      - "What notes have I saved recently?"
+      - "Save a bookmark: https://docs.agno.com -- Agno documentation"
 
     scout:
       - "What is our PTO policy?"
@@ -21,17 +26,7 @@ chat:
       - "Compare the top 3 AI agent frameworks"
       - "What are the latest developments in agentic AI?"
 
-    github-digest:
-      - "Generate a digest of recent activity for agno-agi/agno"
-      - "What PRs were merged in agno-agi/agno this week?"
-      - "Summarize open issues with the most comments"
-
     # ----- Teams -----
-    hub:
-      - "Who had the most podium finishes in 2020?"
-      - "What is our remote work policy?"
-      - "Research the latest developments in AI agent frameworks"
-
     research-team:
       - "Research Anthropic comprehensively -- products, people, and market position"
       - "What do our internal docs say about AI strategy vs industry trends?"
@@ -42,8 +37,3 @@ chat:
       - "Generate my morning briefing"
       - "What's on my calendar today and any important emails?"
       - "Brief me on today's priorities"
-
-    meeting-prep:
-      - "Prepare me for the quarterly planning meeting"
-      - "Research attendees and key topics for the board review"
-      - "Help me prep for a meeting about our AI strategy"
