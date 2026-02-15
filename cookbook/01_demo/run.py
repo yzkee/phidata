@@ -21,7 +21,7 @@ from workflows.daily_brief import daily_brief_workflow
 config_path = str(Path(__file__).parent.joinpath("config.yaml"))
 
 agent_os = AgentOS(
-    agents=[gcode, dash, pal, scout, seek],
+    agents=[dash, gcode, pal, scout, seek],
     teams=[research_team],
     workflows=[daily_brief_workflow],
     tracing=True,
