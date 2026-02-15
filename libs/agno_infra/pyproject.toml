@@ -106,5 +106,6 @@ module = [
   "docker.*",
   "tomllib.*",
   "yaml.*",
+  "tomli.*",
 ]
 ignore_missing_imports = true

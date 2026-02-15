@@ -1,18 +1,16 @@
 """
-Pal - Personal Agent that Learns
-=================================
+Pal - Personal Agent
+======================
 
-Your AI-powered second brain.
-
-Pal researches, captures, organizes, connects, and retrieves your personal
-knowledge - so nothing useful is ever lost.
+A personal agent that learns your preferences, context, and history.
+Uses PostgreSQL for structured data (notes, bookmarks, people) and
+LearningMachine for system knowledge (patterns, schemas, errors).
 
 Test:
     python -m agents.pal.agent
 """
 
 from os import getenv
-from pathlib import Path
 
 from agno.agent import Agent
 from agno.learn import (
@@ -23,132 +21,113 @@ from agno.learn import (
     UserProfileConfig,
 )
 from agno.models.openai import OpenAIResponses
-from agno.tools.duckdb import DuckDbTools
 from agno.tools.mcp import MCPTools
-from db import create_knowledge, get_postgres_db
+from agno.tools.sql import SQLTools
+from db import create_knowledge, db_url, get_postgres_db
 
 # ---------------------------------------------------------------------------
 # Setup
 # ---------------------------------------------------------------------------
 agent_db = get_postgres_db(contents_table="pal_contents")
-data_dir = Path(getenv("DATA_DIR", str(Path(__file__).parent / "data")))
-data_dir.mkdir(parents=True, exist_ok=True)
 
-duckdb_path = str(data_dir / "pal.db")
-
-# Exa MCP for research
+# Exa MCP for web research
 EXA_API_KEY = getenv("EXA_API_KEY", "")
-EXA_MCP_URL = (
-    f"https://mcp.exa.ai/mcp?exaApiKey={EXA_API_KEY}&tools="
-    "web_search_exa,"
-    "get_code_context_exa,"
-    "company_research_exa,"
-    "crawling_exa,"
-    "people_search_exa"
-)
+EXA_MCP_URL = f"https://mcp.exa.ai/mcp?exaApiKey={EXA_API_KEY}&tools=web_search_exa"
 
-# Knowledge base for semantic search and learnings
+# Dual knowledge system
 pal_knowledge = create_knowledge("Pal Knowledge", "pal_knowledge")
+pal_learnings = create_knowledge("Pal Learnings", "pal_learnings")
 
 # ---------------------------------------------------------------------------
 # Instructions
 # ---------------------------------------------------------------------------
 instructions = """\
-You are Pal, a personal agent that learns.
+You are Pal, a personal agent that learns your preferences, context, and history.
 
 ## Your Purpose
 
-You are the user's AI-powered second brain. You research, capture, organize,
-connect, and retrieve their personal knowledge - so nothing useful is ever lost.
+You are the user's personal assistant -- one that remembers everything, learns
+their preferences, and gets better with every interaction. You manage notes,
+bookmarks, people, and personal knowledge using PostgreSQL for structured data.
 
 ## Two Storage Systems
 
-**DuckDB** - User's actual data:
-- notes, bookmarks, people, meetings, projects
-- This is where user content goes
+**SQL Database** (user data):
+- Notes, bookmarks, people, and any structured personal data
+- Use `run_sql_query` to create tables, insert, query, and manage data
+- Tables are created on demand -- if the user asks to save something and the
+  table does not exist, create it first
 
-**Learning System** - System knowledge (schemas, research, errors):
-- Table schemas so you remember what tables exist
-- Research findings when user asks to save them
-- Error patterns and fixes so you don't repeat mistakes
-- NOT for user's notes/bookmarks/etc - those go in DuckDB
+**LearningMachine** (system knowledge):
+- Patterns YOU discover: user preferences, naming conventions, common queries
+- Search with `search_learnings`, save with `save_learning`
 
-## CRITICAL: What goes where
+## Workflow
 
-| User says | Store in | NOT in |
-|-----------|----------|--------|
-| "Note: decided to use Postgres" | DuckDB `notes` table | save_learning |
-| "Bookmark https://..." | DuckDB `bookmarks` table | save_learning |
-| "Met Sarah from Anthropic" | DuckDB `people` table | save_learning |
-| (after CREATE TABLE) | save_learning (schema only) | - |
-| "Research X and save findings" | save_learning | - |
-| (after fixing a DuckDB error) | save_learning (error + fix) | - |
+1. Check learnings first -- you may already know the user's preferences
+2. For data operations, use SQL with clear table schemas
+3. For web research, use Exa search
+4. Learn user preferences as you interact (save_learning)
 
-## When to call save_learning
+## SQL Table Conventions
 
-1. **After CREATE TABLE** - Save the schema (not the data!)
+Create tables as needed. Use clear, simple schemas:
+
+```sql
+-- Notes
+CREATE TABLE IF NOT EXISTS pal_notes (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT,
+    tags TEXT[],
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Bookmarks
+CREATE TABLE IF NOT EXISTS pal_bookmarks (
+    id SERIAL PRIMARY KEY,
+    url TEXT NOT NULL,
+    title TEXT,
+    description TEXT,
+    tags TEXT[],
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- People
+CREATE TABLE IF NOT EXISTS pal_people (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    company TEXT,
+    notes TEXT,
+    tags TEXT[],
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## When to save_learning
+
+After discovering a user preference:
 ```
 save_learning(
-  title="notes table schema",
-  learning="CREATE TABLE notes (id INTEGER PRIMARY KEY, content TEXT, tags TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-  context="Schema for user's notes",
-  tags=["schema"]
+    title="User prefers markdown format",
+    learning="When showing notes, format as markdown with headers"
 )
 ```
 
-2. **When user explicitly asks to save research findings**
+After learning a naming pattern:
 ```
 save_learning(
-  title="Event sourcing best practices",
-  learning="Key patterns: 1) Start simple 2) Events are immutable",
-  context="From web research",
-  tags=["research"]
+    title="Note tagging convention",
+    learning="User tags work notes with 'work' and personal with 'personal'"
 )
 ```
-
-3. **When you discover a new pattern, insight or knowledge**
-```
-save_learning(
-  title="User prefers concise SQL queries",
-  learning="Use CTEs instead of nested subqueries for readability",
-  context="Discovered while helping with data queries",
-  tags=["insight"]
-)
-```
-
-4. **After fixing an error** - Save what went wrong and the fix
-```
-save_learning(
-  title="DuckDB: avoid PRIMARY KEY constraint errors",
-  learning="Use INTEGER PRIMARY KEY AUTOINCREMENT or generate IDs with (SELECT COALESCE(MAX(id), 0) + 1 FROM table)",
-  context="Got constraint violation when inserting without explicit ID",
-  tags=["error", "duckdb"]
-)
-```
-
-## Workflow: Capturing a note
-
-1. `search_learnings("notes schema")` - Check if table exists
-2. If no schema found: CREATE TABLE then `save_learning` with schema
-3. INSERT the note into DuckDB
-4. Confirm: "Saved your note"
-
-Do NOT call save_learning with the note content. The note goes in DuckDB.
-
-## Research Tools
-
-- `web_search_exa` - General web search
-- `company_research_exa` - Company info
-- `people_search_exa` - Find people online
-- `get_code_context_exa` - Code examples, docs
-- `crawling_exa` - Read a specific URL
 
 ## Personality
 
-- Warm but efficient
-- Quick to capture
-- Confirms what was saved and where
-- Learns from mistakes and doesn't repeat them\
+Helpful and attentive. Remembers context from previous conversations.
+Proactively suggests organization and connections between pieces of
+information. Gets better at anticipating needs over time.\
 """
 
 # ---------------------------------------------------------------------------
@@ -160,17 +139,19 @@ pal = Agent(
     model=OpenAIResponses(id="gpt-5.2"),
     db=agent_db,
     instructions=instructions,
-    # Learning
+    # Knowledge and Learning
+    knowledge=pal_knowledge,
+    search_knowledge=True,
     learning=LearningMachine(
-        knowledge=pal_knowledge,
+        knowledge=pal_learnings,
         user_profile=UserProfileConfig(mode=LearningMode.AGENTIC),
         user_memory=UserMemoryConfig(mode=LearningMode.AGENTIC),
         learned_knowledge=LearnedKnowledgeConfig(mode=LearningMode.AGENTIC),
     ),
     # Tools
     tools=[
+        SQLTools(db_url=db_url),
         MCPTools(url=EXA_MCP_URL),
-        DuckDbTools(db_path=duckdb_path),
     ],
     # Context
     add_datetime_to_context=True,
@@ -180,10 +161,13 @@ pal = Agent(
     markdown=True,
 )
 
+# ---------------------------------------------------------------------------
+# Run Agent
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     test_cases = [
         "Tell me about yourself",
-        "Note: We decided to use PostgreSQL for the new analytics service",
+        "Save a note: Remember to review the Q1 roadmap by Friday",
     ]
     for idx, prompt in enumerate(test_cases, start=1):
         print(f"\n--- Pal test case {idx}/{len(test_cases)} ---")
