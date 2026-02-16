@@ -46,7 +46,7 @@ Everything runs in your cloud. Your data never leaves your environment.
 
 ## Quick Start
 
-Build an agent that answers questions about Agno, remembers previous conversations, and runs as a production API:
+Build an agent that answers questions about Agno, remembers past conversations, and runs as a production API:
 
 ```python
 from agno.agent import Agent
