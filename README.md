@@ -22,7 +22,9 @@
 
 ## What is Agno?
 
-Agno is the programming language for agentic software. It provides the complete stack for building, running, and deploying multi-agent systems.
+Agno is the programming language for agentic software.
+
+It provides the complete stack for building, running, and deploying multi-agent systems.
 
 | Layer | What it does |
 |-------|--------------|
