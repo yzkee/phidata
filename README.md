@@ -9,7 +9,7 @@
 </div>
 
 <p align="center">
-  <strong>The programming language for agentic software.</strong><br/>
+  The programming language for agentic software.<br/>
   Build multi-agent systems with streaming, memory, governance, and isolation built in.
 </p>
 
