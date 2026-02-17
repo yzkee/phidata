@@ -10,7 +10,7 @@
 
 <p align="center">
   The programming language for agentic software.<br/>
-  Build multi-agent systems with streaming, memory, governance, and isolation built in.
+  Build multi-agent systems with streaming, memory, governance, and request isolation.
 </p>
 
 <div align="center">
