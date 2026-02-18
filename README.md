@@ -10,7 +10,7 @@
 
 <p align="center">
   The programming language for agentic software.<br/>
-  Build, deploy and manage multi-agent systems at scale.
+  Build, deploy, and manage multi-agent systems at scale.
 </p>
 
 <div align="center">
@@ -23,11 +23,9 @@
 
 ## What is Agno?
 
-Agno is a programming language for building, deploying and managing agentic software at scale.
+Agno is the programming language for agentic software.
 
-Agentic software operates under a different contract than traditional software. Execution is dynamic. Decisions are contextual. Trust must be engineered.
-
-Agno gives you the primitives, execution engine, and production runtime to build with this new paradigm.
+Agentic software operates under a different contract than traditional software. Execution is dynamic. Decisions are contextual. Trust must be engineered. Agno provides the primitives, execution engine, and production runtime to handle that natively.
 
 | Layer | What it does |
 |-------|--------------|
