@@ -23,11 +23,11 @@
 
 ## What is Agno?
 
-Agno is the open-source stack for building, deploying and managing multi-agent systems.
+Agno is a programming language for building, deploying and managing agentic software at scale.
 
 Agentic software operates under a different contract than traditional software. Execution is dynamic. Decisions are contextual. Trust must be engineered.
 
-Agno gives you the primitives, execution engine, and production runtime to handle that natively.
+Agno gives you the primitives, execution engine, and production runtime to build with this new paradigm.
 
 | Layer | What it does |
 |-------|--------------|
