@@ -2,9 +2,7 @@
 
 Learn how to build agents with 12 guided cookbooks. We'll go from single tool-using agent to multi-agent teams and step-based workflows through clean, runnable examples. Each file focuses on one core capability and can be run independently.
 
-All examples use Gemini 3.1 Pro for strong multi-step reasoning and reliable tool execution. You can swap to any model with a one-line change.
-
-You only need Python and an API key.
+All examples use Gemini 3.1 Pro for strong multi-step reasoning and reliable tool execution. You can swap to any model with a one-line change. You only need Python and an API key.
 
 ## Key Concepts
 
