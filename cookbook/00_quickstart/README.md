@@ -1,8 +1,6 @@
 # The Agent Quickstart: 12 Guided Cookbooks
 
-This guide teaches you how to build real agents with Agno.
-
-You will go from a single tool-using agent to multi-agent teams and step-based workflows through clean, runnable examples. Each file focuses on one core capability and can be run independently.
+Learn how to build agents with 12 guided cookbooks. We'll go from single tool-using agent to multi-agent teams and step-based workflows through clean, runnable examples. Each file focuses on one core capability and can be run independently.
 
 All examples use Gemini 3.1 Pro for strong multi-step reasoning and reliable tool execution. You can swap to any model with a one-line change.
 
