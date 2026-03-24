@@ -26,12 +26,12 @@ import io
 import json
 import mimetypes
 import textwrap
-from functools import wraps
 from os import getenv
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union, cast
 
 from agno.tools import Toolkit
+from agno.tools.google.auth import google_authenticate
 from agno.utils.log import log_error
 
 try:
@@ -84,24 +84,7 @@ DRIVE_QUERY_INSTRUCTIONS = textwrap.dedent(f"""\
     - Trashed files are filtered automatically. Do not add trashed clauses.""")
 
 
-def authenticate(func):
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        try:
-            if not self.creds or not self.creds.valid:
-                self._auth()
-            if not self.service:
-                creds_to_use = self.creds
-                # Set quota project on credentials if available
-                if self.quota_project_id and hasattr(creds_to_use, "with_quota_project"):
-                    creds_to_use = cast(Any, creds_to_use).with_quota_project(self.quota_project_id)
-                self.service = build("drive", "v3", credentials=creds_to_use)
-        except Exception as e:
-            log_error(f"Google Drive authentication failed: {e}")
-            return json.dumps({"error": f"Google Drive authentication failed: {e}"})
-        return func(self, *args, **kwargs)
-
-    return wrapper
+authenticate = google_authenticate("drive")
 
 
 class GoogleDriveTools(Toolkit):
@@ -310,6 +293,12 @@ class GoogleDriveTools(Toolkit):
 
         if self.creds and self.creds.valid:
             token_file.write_text(self.creds.to_json())
+
+    def _build_service(self):
+        creds_to_use = self.creds
+        if self.quota_project_id and hasattr(creds_to_use, "with_quota_project"):
+            creds_to_use = cast(Any, creds_to_use).with_quota_project(self.quota_project_id)
+        return build("drive", "v3", credentials=creds_to_use)
 
     def _get_file_metadata(self, file_id: str, fields: str) -> dict:
         service = cast(Resource, self.service)
