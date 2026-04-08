@@ -416,7 +416,7 @@ class StepOutput:
 
         # Add nested steps if they exist
         if self.steps:
-            result["steps"] = [step.to_dict() for step in self.steps]
+            result["steps"] = [step.to_dict() if hasattr(step, "to_dict") else step for step in self.steps]
 
         return result
 
@@ -550,6 +550,7 @@ class StepType(str, Enum):
     PARALLEL = "Parallel"
     CONDITION = "Condition"
     ROUTER = "Router"
+    WORKFLOW = "Workflow"
 
 
 @dataclass
