@@ -178,6 +178,10 @@ class SlackContextProvider(ContextProvider):
         return self._assisted_read_tools
 
     def _ensure_write_tools(self) -> SlackTools:
+        # Writer gets just enough to resolve #channel / @user names and post.
+        # No search / history / threads / uploads / downloads — if the write
+        # instruction needs context, compose query_slack → update_slack at
+        # the caller.
         if self._write_tools is None:
             self._write_tools = SlackTools(
                 token=self.token,
