@@ -44,21 +44,40 @@ def test_init_all_flag_enables_all():
             assert len(tools.functions) == 12
 
 
-def test_preset_factories_expose_expected_surfaces():
+def test_explicit_flags_expose_expected_surfaces():
     with patch.dict("os.environ", {"SLACK_TOKEN": "test"}):
         with patch("agno.tools.slack.WebClient"):
-            bot_read = SlackTools.for_bot_read()
-            assistant_search = SlackTools.for_assistant_search()
-            assisted_read = SlackTools.for_assisted_read()
-            write = SlackTools.for_write()
+            read = SlackTools(
+                enable_send_message=False,
+                enable_send_message_thread=False,
+                enable_upload_file=False,
+                enable_download_file=False,
+                enable_list_channels=True,
+                enable_get_channel_history=True,
+                enable_search_workspace=True,
+                enable_get_thread=True,
+                enable_list_users=True,
+                enable_get_user_info=True,
+                enable_get_channel_info=True,
+            )
+            write = SlackTools(
+                enable_send_message=True,
+                enable_send_message_thread=True,
+                enable_upload_file=False,
+                enable_download_file=False,
+                enable_list_channels=True,
+                enable_get_channel_history=False,
+                enable_search_workspace=False,
+                enable_get_thread=False,
+                enable_list_users=True,
+                enable_get_user_info=True,
+                enable_get_channel_info=True,
+            )
 
-    assert "get_channel_history" in bot_read.functions
-    assert "search_workspace" not in bot_read.functions
-    assert list(assistant_search.functions.keys()) == ["search_workspace"]
-    assert "search_workspace" in assisted_read.functions
-    assert "get_channel_history" in assisted_read.functions
-    assert "get_thread" in assisted_read.functions
-    assert "send_message" not in assisted_read.functions
+    assert "search_workspace" in read.functions
+    assert "get_channel_history" in read.functions
+    assert "get_thread" in read.functions
+    assert "send_message" not in read.functions
     assert "send_message" in write.functions
     assert "get_channel_history" not in write.functions
 
