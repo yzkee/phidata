@@ -331,6 +331,45 @@ def test_slack_read_surfaces_are_split_by_mode():
     assert "get_channel_history" not in assistant_tools.functions
 
 
+def test_slack_read_instructions_override_both_read_agents(monkeypatch):
+    import agno.context.slack.provider as slack_provider
+
+    captured: dict[str, str] = {}
+
+    class _StubAgent:
+        def __init__(self, *, id: str, instructions: str, **kwargs):
+            captured[id] = instructions
+
+    monkeypatch.setattr(slack_provider, "Agent", _StubAgent)
+
+    p = SlackContextProvider(token="xoxb-x", read_instructions="Custom read policy.")
+    p._build_bot_read_agent()
+    p._build_assistant_search_agent()
+
+    assert captured["slack-bot-read"] == "Custom read policy."
+    assert captured["slack-assistant-search"] == "Custom read policy."
+
+
+def test_slack_default_read_instructions_stay_tool_specific(monkeypatch):
+    import agno.context.slack.provider as slack_provider
+
+    captured: dict[str, str] = {}
+
+    class _StubAgent:
+        def __init__(self, *, id: str, instructions: str, **kwargs):
+            captured[id] = instructions
+
+    monkeypatch.setattr(slack_provider, "Agent", _StubAgent)
+
+    p = SlackContextProvider(token="xoxb-x")
+    p._build_bot_read_agent()
+    p._build_assistant_search_agent()
+
+    assert "get_channel_history" in captured["slack-bot-read"]
+    assert "search_workspace" in captured["slack-assistant-search"]
+    assert captured["slack-bot-read"] != captured["slack-assistant-search"]
+
+
 @pytest.mark.asyncio
 async def test_slack_aupdate_routes_through_write_agent(monkeypatch):
     """aupdate must hit the write sub-agent, not the read one."""

@@ -45,6 +45,7 @@ class SlackContextProvider(ContextProvider):
         token: str | None = None,
         id: str = "slack",
         name: str = "Slack",
+        read_instructions: str | None = None,
         write_instructions: str | None = None,
         mode: ContextMode = ContextMode.default,
         model: Model | None = None,
@@ -53,6 +54,7 @@ class SlackContextProvider(ContextProvider):
         self.token = token or getenv("SLACK_BOT_TOKEN") or getenv("SLACK_TOKEN")
         if not self.token:
             raise ValueError("SlackContextProvider: SLACK_BOT_TOKEN (or SLACK_TOKEN) is required")
+        self.read_instructions_text = read_instructions
         self.write_instructions_text = (
             write_instructions if write_instructions is not None else DEFAULT_SLACK_WRITE_INSTRUCTIONS
         )
@@ -135,6 +137,9 @@ class SlackContextProvider(ContextProvider):
             return self._ensure_assistant_search_agent()
         return self._ensure_bot_read_agent()
 
+    def _read_instructions(self, default: str) -> str:
+        return self.read_instructions_text if self.read_instructions_text is not None else default
+
     def _ensure_bot_read_tools(self) -> SlackTools:
         if self._bot_read_tools is None:
             self._bot_read_tools = SlackTools.for_bot_read(token=self.token)
@@ -174,7 +179,7 @@ class SlackContextProvider(ContextProvider):
             id=f"{self.id}-bot-read",
             name=f"{self.name} Bot Read",
             model=self.model,
-            instructions=_SLACK_BOT_TOKEN_READ_INSTRUCTIONS,
+            instructions=self._read_instructions(_SLACK_BOT_TOKEN_READ_INSTRUCTIONS),
             tools=[self._ensure_bot_read_tools()],
             markdown=True,
         )
@@ -184,7 +189,7 @@ class SlackContextProvider(ContextProvider):
             id=f"{self.id}-assistant-search",
             name=f"{self.name} Assistant Search",
             model=self.model,
-            instructions=_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS,
+            instructions=self._read_instructions(_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS),
             tools=[self._ensure_assistant_search_tools()],
             markdown=True,
         )
