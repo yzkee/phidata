@@ -142,21 +142,56 @@ class SlackContextProvider(ContextProvider):
 
     def _ensure_bot_read_tools(self) -> SlackTools:
         if self._bot_read_tools is None:
-            self._bot_read_tools = SlackTools.for_bot_read(token=self.token)
+            self._bot_read_tools = SlackTools(
+                token=self.token,
+                enable_send_message=False,
+                enable_send_message_thread=False,
+                enable_upload_file=False,
+                enable_download_file=False,
+                enable_list_channels=True,
+                enable_get_channel_history=True,
+                enable_search_workspace=False,
+                enable_get_thread=True,
+                enable_list_users=True,
+                enable_get_user_info=True,
+                enable_get_channel_info=True,
+            )
         return self._bot_read_tools
 
     def _ensure_assistant_search_tools(self) -> SlackTools:
         if self._assistant_search_tools is None:
-            self._assistant_search_tools = SlackTools.for_assistant_search(token=self.token)
+            self._assistant_search_tools = SlackTools(
+                token=self.token,
+                enable_send_message=False,
+                enable_send_message_thread=False,
+                enable_upload_file=False,
+                enable_download_file=False,
+                enable_list_channels=False,
+                enable_get_channel_history=False,
+                enable_search_workspace=True,
+                enable_get_thread=False,
+                enable_list_users=False,
+                enable_get_user_info=False,
+                enable_get_channel_info=False,
+            )
         return self._assistant_search_tools
 
     def _ensure_write_tools(self) -> SlackTools:
-        # Writer gets just enough to resolve #channel / @user names and post.
-        # No search / history / threads / uploads / downloads — if the write
-        # instruction needs context, compose query_slack → update_slack at
-        # the caller.
         if self._write_tools is None:
-            self._write_tools = SlackTools.for_write(token=self.token)
+            self._write_tools = SlackTools(
+                token=self.token,
+                enable_send_message=True,
+                enable_send_message_thread=True,
+                enable_upload_file=False,
+                enable_download_file=False,
+                enable_list_channels=True,
+                enable_get_channel_history=False,
+                enable_search_workspace=False,
+                enable_get_thread=False,
+                enable_list_users=True,
+                enable_get_user_info=True,
+                enable_get_channel_info=True,
+            )
         return self._write_tools
 
     def _ensure_bot_read_agent(self) -> Agent:
