@@ -47,7 +47,7 @@ Providers ship in this package:
 | `10_custom_provider.py` | Subclass `ContextProvider` for your own source |
 | `11_web_parallel_mcp.py` | Web research via Parallel's public MCP endpoint (keyless; `PARALLEL_API_KEY` raises the ceiling) |
 | `12_engineering_briefing.py` | Slack topics + project files + Parallel web into an engineering-sync briefing |
-| `12_workspace.py` | Browse a repository root via `WorkspaceContextProvider` without virtualenv / scratch noise |
+| `13_workspace.py` | Browse a repository root via `WorkspaceContextProvider` without virtualenv / scratch noise |
 
 ## Run
 
