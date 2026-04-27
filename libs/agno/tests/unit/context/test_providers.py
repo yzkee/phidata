@@ -546,12 +546,14 @@ def test_slack_default_instructions_advertise_query_and_update():
     assert "assistant search" not in instructions
 
 
-def test_slack_agent_mode_instructions_advertise_query_only():
+def test_slack_agent_mode_surface_is_query_plus_update():
     p = SlackContextProvider(token="xoxb-x", mode=ContextMode.agent)
+    tools = p.get_tools()
     instructions = p.instructions()
 
+    assert [t.name for t in tools] == ["query_slack", "update_slack"]
     assert "query_slack" in instructions
-    assert "update_slack" not in instructions
+    assert "update_slack" in instructions
 
 
 # ---------------------------------------------------------------------------
