@@ -10,10 +10,11 @@ Read + write access to a Slack workspace via two tools:
   a thread).
 
 Separate sub-agents under the hood keep each scope narrow. Bot-token
-reads get channel history and thread tools, Slack-interface reads get
-assistant search, and writes get posting plus lookup tools. If a write
-needs context ("reply to the last message in #bots"), compose
-``query_slack`` → ``update_slack`` at the caller.
+reads get channel history and thread tools; Slack-interface reads add
+assistant search to the same deterministic read surface; writes get
+posting plus lookup tools. If a write needs context ("reply to the last
+message in #bots"), compose ``query_slack`` → ``update_slack`` at the
+caller.
 
 Uses ``SLACK_BOT_TOKEN`` (bot tokens start with ``xoxb-``). Falls
 back to ``SLACK_TOKEN`` since that's the variable agno's
@@ -59,10 +60,10 @@ class SlackContextProvider(ContextProvider):
             write_instructions if write_instructions is not None else DEFAULT_SLACK_WRITE_INSTRUCTIONS
         )
         self._bot_read_tools: SlackTools | None = None
-        self._assistant_search_tools: SlackTools | None = None
+        self._assisted_read_tools: SlackTools | None = None
         self._write_tools: SlackTools | None = None
         self._bot_read_agent: Agent | None = None
-        self._assistant_search_agent: Agent | None = None
+        self._assisted_read_agent: Agent | None = None
         self._write_agent: Agent | None = None
 
     def status(self) -> Status:
@@ -98,10 +99,10 @@ class SlackContextProvider(ContextProvider):
                 "`get_thread(channel, ts)` to expand a thread; `get_channel_info` / `get_user_info` "
                 "to resolve names. Pass channel names like `#agents` directly."
             )
+        if self.mode == ContextMode.agent:
+            return f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack."
         return (
             f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack. "
-            "It automatically uses Slack assistant search when invoked from Slack, and bot-token "
-            "channel reads elsewhere. "
             f"Use `{self.update_tool_name}(instruction)` to post a message."
         )
 
@@ -134,7 +135,7 @@ class SlackContextProvider(ContextProvider):
 
     def _select_read_agent(self, run_context: RunContext | None) -> Agent:
         if self._has_action_token(run_context):
-            return self._ensure_assistant_search_agent()
+            return self._ensure_assisted_read_agent()
         return self._ensure_bot_read_agent()
 
     def _read_instructions(self, default: str) -> str:
@@ -158,23 +159,23 @@ class SlackContextProvider(ContextProvider):
             )
         return self._bot_read_tools
 
-    def _ensure_assistant_search_tools(self) -> SlackTools:
-        if self._assistant_search_tools is None:
-            self._assistant_search_tools = SlackTools(
+    def _ensure_assisted_read_tools(self) -> SlackTools:
+        if self._assisted_read_tools is None:
+            self._assisted_read_tools = SlackTools(
                 token=self.token,
                 enable_send_message=False,
                 enable_send_message_thread=False,
                 enable_upload_file=False,
                 enable_download_file=False,
-                enable_list_channels=False,
-                enable_get_channel_history=False,
+                enable_list_channels=True,
+                enable_get_channel_history=True,
                 enable_search_workspace=True,
-                enable_get_thread=False,
-                enable_list_users=False,
-                enable_get_user_info=False,
-                enable_get_channel_info=False,
+                enable_get_thread=True,
+                enable_list_users=True,
+                enable_get_user_info=True,
+                enable_get_channel_info=True,
             )
-        return self._assistant_search_tools
+        return self._assisted_read_tools
 
     def _ensure_write_tools(self) -> SlackTools:
         if self._write_tools is None:
@@ -199,10 +200,10 @@ class SlackContextProvider(ContextProvider):
             self._bot_read_agent = self._build_bot_read_agent()
         return self._bot_read_agent
 
-    def _ensure_assistant_search_agent(self) -> Agent:
-        if self._assistant_search_agent is None:
-            self._assistant_search_agent = self._build_assistant_search_agent()
-        return self._assistant_search_agent
+    def _ensure_assisted_read_agent(self) -> Agent:
+        if self._assisted_read_agent is None:
+            self._assisted_read_agent = self._build_assisted_read_agent()
+        return self._assisted_read_agent
 
     def _ensure_write_agent(self) -> Agent:
         if self._write_agent is None:
@@ -219,13 +220,13 @@ class SlackContextProvider(ContextProvider):
             markdown=True,
         )
 
-    def _build_assistant_search_agent(self) -> Agent:
+    def _build_assisted_read_agent(self) -> Agent:
         return Agent(
-            id=f"{self.id}-assistant-search",
-            name=f"{self.name} Assistant Search",
+            id=f"{self.id}-assisted-read",
+            name=f"{self.name} Assisted Read",
             model=self.model,
-            instructions=self._read_instructions(_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS),
-            tools=[self._ensure_assistant_search_tools()],
+            instructions=self._read_instructions(_SLACK_ASSISTED_READ_INSTRUCTIONS),
+            tools=[self._ensure_assisted_read_tools()],
             markdown=True,
         )
 
@@ -240,22 +241,29 @@ class SlackContextProvider(ContextProvider):
         )
 
 
-_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS = """\
-You answer questions by searching Slack through the Slack assistant
-search context API.
+_SLACK_ASSISTED_READ_INSTRUCTIONS = """\
+You answer questions by searching and reading Slack.
 
 Workflow:
-1. **Search first.** `search_workspace(query)` finds messages across the
-   workspace using the caller's Slack interface permissions.
-2. **Shape the query.** Include channel or topic hints from the user's
-   request. Use Slack search filters when useful, e.g. `in:#agents`.
-3. **Use returned context.** Search results include channel, author,
-   timestamp, permalink, and surrounding context when available.
-4. **Cite.** Every claim should point to channel + author + timestamp
+1. **Use the deterministic tools for exact reads.** If the user asks for
+   recent messages in a specific channel, call
+   `get_channel_history(channel)`. If they ask about a thread or a
+   message with replies, call `get_thread(channel, ts)`.
+2. **Use assistant search for broad reads.** `search_workspace(query)`
+   is for topic, catch-up, cross-channel, and fuzzy discovery requests
+   across the workspace using the caller's Slack interface permissions.
+3. **Shape search queries.** Include channel or topic hints from the
+   user's request. Use Slack search filters when useful, e.g.
+   `in:#agents`.
+4. **Resolve names.** `get_user_info` / `list_users` turn Slack user IDs
+   into display names. Don't invent a name when the ID doesn't resolve -
+   report the raw user id instead.
+5. **Cite.** Every claim should point to channel + author + timestamp
    or permalink. Quote message text verbatim; don't paraphrase.
 
 You are read-only. Never send messages, upload, or download. If the
-search returns nothing, say so plainly — don't speculate.
+channel cannot be read or search returns nothing, say so plainly - don't
+speculate.
 """
 
 

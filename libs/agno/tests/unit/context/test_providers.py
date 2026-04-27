@@ -7,6 +7,7 @@ The full end-to-end behaviour is covered by the cookbooks.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,7 @@ from agno.context.mcp import MCPContextProvider
 from agno.context.mode import ContextMode
 from agno.context.slack import SlackContextProvider
 from agno.context.web import ExaBackend, ExaMCPBackend, ParallelMCPBackend, WebContextProvider
+from agno.context.workspace import WorkspaceContextProvider
 
 # ---------------------------------------------------------------------------
 # Filesystem
@@ -53,6 +55,75 @@ def test_fs_default_surface_is_single_query_tool(tmp_path: Path):
     p = FilesystemContextProvider(root=tmp_path, id="docs")
     tools = p.get_tools()
     assert [t.name for t in tools] == ["query_docs"]
+
+
+def test_fs_provider_can_opt_out_of_default_excludes(tmp_path: Path):
+    hidden = tmp_path / ".context"
+    hidden.mkdir()
+    (hidden / "note.py").write_text("# marker")
+
+    p = FilesystemContextProvider(root=tmp_path, mode=ContextMode.tools, exclude_patterns=[])
+    file_tools = p.get_tools()[0]
+    result = json.loads(file_tools.search_content("marker"))
+    assert result["matches_found"] == 1
+    assert result["files"][0]["file"] == ".context/note.py"
+
+
+# ---------------------------------------------------------------------------
+# Workspace
+# ---------------------------------------------------------------------------
+
+
+def test_workspace_status_ok_for_existing_dir(tmp_path: Path):
+    p = WorkspaceContextProvider(root=tmp_path)
+    status = p.status()
+    assert status.ok is True
+    assert str(tmp_path) in status.detail
+
+
+def test_workspace_status_reports_missing_root(tmp_path: Path):
+    missing = tmp_path / "does-not-exist"
+    p = WorkspaceContextProvider(root=missing)
+    status = p.status()
+    assert status.ok is False
+    assert "does not exist" in status.detail
+
+
+def test_workspace_status_reports_non_directory(tmp_path: Path):
+    file_ = tmp_path / "a.txt"
+    file_.write_text("hi")
+    p = WorkspaceContextProvider(root=file_)
+    status = p.status()
+    assert status.ok is False
+    assert "not a directory" in status.detail
+
+
+def test_workspace_default_surface_is_single_query_tool(tmp_path: Path):
+    p = WorkspaceContextProvider(root=tmp_path, id="project")
+    tools = p.get_tools()
+    assert [t.name for t in tools] == ["query_project"]
+
+
+def test_workspace_tools_mode_is_read_only(tmp_path: Path):
+    p = WorkspaceContextProvider(root=tmp_path, mode=ContextMode.tools)
+    workspace = p.get_tools()[0]
+    assert sorted(workspace.functions.keys()) == ["list_files", "read_file", "search_content"]
+
+
+def test_workspace_context_excludes_agent_scratch_and_plural_venvs(tmp_path: Path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "app.py").write_text("# marker")
+    (tmp_path / ".context").mkdir()
+    (tmp_path / ".context" / "notes.py").write_text("# marker")
+    venvs_pkg = tmp_path / ".venvs" / "demo" / "lib"
+    venvs_pkg.mkdir(parents=True)
+    (venvs_pkg / "installed.py").write_text("# marker")
+
+    p = WorkspaceContextProvider(root=tmp_path, mode=ContextMode.tools)
+    workspace = p.get_tools()[0]
+    result = json.loads(workspace.search_content("marker", limit=10))
+    assert result["matches_found"] == 1
+    assert result["files"][0]["file"] == "src/app.py"
 
 
 # ---------------------------------------------------------------------------
@@ -323,12 +394,13 @@ def test_slack_status_reports_configured():
 def test_slack_read_surfaces_are_split_by_mode():
     p = SlackContextProvider(token="xoxb-x")
     bot_tools = p._ensure_bot_read_tools()
-    assistant_tools = p._ensure_assistant_search_tools()
+    assisted_tools = p._ensure_assisted_read_tools()
 
     assert "search_workspace" not in bot_tools.functions
     assert "get_channel_history" in bot_tools.functions
-    assert "search_workspace" in assistant_tools.functions
-    assert "get_channel_history" not in assistant_tools.functions
+    assert "search_workspace" in assisted_tools.functions
+    assert "get_channel_history" in assisted_tools.functions
+    assert "get_thread" in assisted_tools.functions
 
 
 def test_slack_read_instructions_override_both_read_agents(monkeypatch):
@@ -344,10 +416,10 @@ def test_slack_read_instructions_override_both_read_agents(monkeypatch):
 
     p = SlackContextProvider(token="xoxb-x", read_instructions="Custom read policy.")
     p._build_bot_read_agent()
-    p._build_assistant_search_agent()
+    p._build_assisted_read_agent()
 
     assert captured["slack-bot-read"] == "Custom read policy."
-    assert captured["slack-assistant-search"] == "Custom read policy."
+    assert captured["slack-assisted-read"] == "Custom read policy."
 
 
 def test_slack_default_read_instructions_stay_tool_specific(monkeypatch):
@@ -363,11 +435,12 @@ def test_slack_default_read_instructions_stay_tool_specific(monkeypatch):
 
     p = SlackContextProvider(token="xoxb-x")
     p._build_bot_read_agent()
-    p._build_assistant_search_agent()
+    p._build_assisted_read_agent()
 
     assert "get_channel_history" in captured["slack-bot-read"]
-    assert "search_workspace" in captured["slack-assistant-search"]
-    assert captured["slack-bot-read"] != captured["slack-assistant-search"]
+    assert "get_channel_history" in captured["slack-assisted-read"]
+    assert "search_workspace" in captured["slack-assisted-read"]
+    assert captured["slack-bot-read"] != captured["slack-assisted-read"]
 
 
 @pytest.mark.asyncio
@@ -404,7 +477,7 @@ async def test_slack_aupdate_routes_through_write_agent(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_slack_uses_assistant_search_with_action_token(monkeypatch):
+async def test_slack_uses_assisted_read_with_action_token(monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
     from agno.context.provider import Answer
@@ -417,7 +490,7 @@ async def test_slack_uses_assistant_search_with_action_token(monkeypatch):
     mock_run_output.get_content_as_string = MagicMock(return_value="mock answer")
     mock_run_output.content = "mock answer"
     mock_agent.arun = AsyncMock(return_value=mock_run_output)
-    monkeypatch.setattr(p, "_ensure_assistant_search_agent", lambda: mock_agent)
+    monkeypatch.setattr(p, "_ensure_assisted_read_agent", lambda: mock_agent)
 
     rc = RunContext(
         run_id="r-slack-1",
@@ -462,6 +535,23 @@ def test_slack_tools_mode_uses_bot_read_surface():
     tools = p.get_tools()[0]
     assert "search_workspace" not in tools.functions
     assert "get_channel_history" in tools.functions
+
+
+def test_slack_default_instructions_advertise_query_and_update():
+    p = SlackContextProvider(token="xoxb-x")
+    instructions = p.instructions()
+
+    assert "query_slack" in instructions
+    assert "update_slack" in instructions
+    assert "assistant search" not in instructions
+
+
+def test_slack_agent_mode_instructions_advertise_query_only():
+    p = SlackContextProvider(token="xoxb-x", mode=ContextMode.agent)
+    instructions = p.instructions()
+
+    assert "query_slack" in instructions
+    assert "update_slack" not in instructions
 
 
 # ---------------------------------------------------------------------------
