@@ -49,11 +49,16 @@ def test_preset_factories_expose_expected_surfaces():
         with patch("agno.tools.slack.WebClient"):
             bot_read = SlackTools.for_bot_read()
             assistant_search = SlackTools.for_assistant_search()
+            assisted_read = SlackTools.for_assisted_read()
             write = SlackTools.for_write()
 
     assert "get_channel_history" in bot_read.functions
     assert "search_workspace" not in bot_read.functions
     assert list(assistant_search.functions.keys()) == ["search_workspace"]
+    assert "search_workspace" in assisted_read.functions
+    assert "get_channel_history" in assisted_read.functions
+    assert "get_thread" in assisted_read.functions
+    assert "send_message" not in assisted_read.functions
     assert "send_message" in write.functions
     assert "get_channel_history" not in write.functions
 

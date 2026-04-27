@@ -264,6 +264,25 @@ class SlackTools(Toolkit):
         )
 
     @classmethod
+    def for_assisted_read(cls, token: Optional[str] = None, **kwargs) -> "SlackTools":
+        """Create the Slack-interface read surface with search plus deterministic reads."""
+        return cls(
+            token=token,
+            enable_send_message=False,
+            enable_send_message_thread=False,
+            enable_upload_file=False,
+            enable_download_file=False,
+            enable_list_channels=True,
+            enable_get_channel_history=True,
+            enable_search_workspace=True,
+            enable_get_thread=True,
+            enable_list_users=True,
+            enable_get_user_info=True,
+            enable_get_channel_info=True,
+            **kwargs,
+        )
+
+    @classmethod
     def for_write(cls, token: Optional[str] = None, **kwargs) -> "SlackTools":
         """Create the minimal write surface for posting messages."""
         return cls(
