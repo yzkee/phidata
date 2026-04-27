@@ -99,8 +99,6 @@ class SlackContextProvider(ContextProvider):
                 "`get_thread(channel, ts)` to expand a thread; `get_channel_info` / `get_user_info` "
                 "to resolve names. Pass channel names like `#agents` directly."
             )
-        if self.mode == ContextMode.agent:
-            return f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack."
         return (
             f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack. "
             f"Use `{self.update_tool_name}(instruction)` to post a message."
@@ -112,11 +110,14 @@ class SlackContextProvider(ContextProvider):
 
     # Wrap in sub-agents by default — seven flat SlackTools methods bloat
     # the calling agent's prompt, and splitting reads/writes keeps each
-    # sub-agent's scope minimal. mode=tools surfaces the read tools flat
-    # (write needs sub-agent composition; flat write tools can be added
-    # later if someone has a concrete reason).
+    # sub-agent's scope minimal. mode=tools surfaces the read tools flat.
     def _default_tools(self) -> list:
         return [self._query_tool(), self._update_tool()]
+
+    def get_tools(self) -> list:
+        if self.mode == ContextMode.tools:
+            return self._all_tools()
+        return self._default_tools()
 
     def _all_tools(self) -> list:
         # `mode=tools` is static: the provider cannot know whether a future
