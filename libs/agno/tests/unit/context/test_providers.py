@@ -16,6 +16,7 @@ from agno.context.database import DatabaseContextProvider
 from agno.context.fs import FilesystemContextProvider
 from agno.context.gdrive import GDriveContextProvider
 from agno.context.mcp import MCPContextProvider
+from agno.context.mode import ContextMode
 from agno.context.slack import SlackContextProvider
 from agno.context.web import ExaBackend, ExaMCPBackend, ParallelMCPBackend, WebContextProvider
 
@@ -324,7 +325,6 @@ def test_slack_read_surfaces_are_split_by_mode():
     bot_tools = p._ensure_bot_read_tools()
     assistant_tools = p._ensure_assistant_search_tools()
 
-    assert p.read_mode == "auto"
     assert "search_workspace" not in bot_tools.functions
     assert "get_channel_history" in bot_tools.functions
     assert "search_workspace" in assistant_tools.functions
@@ -365,7 +365,7 @@ async def test_slack_aupdate_routes_through_write_agent(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_slack_auto_read_mode_uses_assistant_search_with_action_token(monkeypatch):
+async def test_slack_uses_assistant_search_with_action_token(monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
     from agno.context.provider import Answer
@@ -400,7 +400,7 @@ async def test_slack_auto_read_mode_uses_assistant_search_with_action_token(monk
 
 
 @pytest.mark.asyncio
-async def test_slack_auto_read_mode_uses_bot_read_without_action_token(monkeypatch):
+async def test_slack_uses_bot_read_without_action_token(monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
     p = SlackContextProvider(token="xoxb-x")
@@ -418,11 +418,11 @@ async def test_slack_auto_read_mode_uses_bot_read_without_action_token(monkeypat
     assert answer.text == "bot answer"
 
 
-def test_slack_assistant_search_mode_requires_action_token():
-    p = SlackContextProvider(token="xoxb-x", read_mode="assistant_search")
-
-    with pytest.raises(RuntimeError, match="action_token"):
-        p.query("search slack")
+def test_slack_tools_mode_uses_bot_read_surface():
+    p = SlackContextProvider(token="xoxb-x", mode=ContextMode.tools)
+    tools = p.get_tools()[0]
+    assert "search_workspace" not in tools.functions
+    assert "get_channel_history" in tools.functions
 
 
 # ---------------------------------------------------------------------------

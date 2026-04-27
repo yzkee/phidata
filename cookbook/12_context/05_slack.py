@@ -58,8 +58,8 @@ async def main() -> None:
     print(f"\nslack.status() = {slack.status()}\n")
 
     # --- Read path (always runs) ---
-    # In CLI runs, read_mode="auto" uses bot-token-compatible channel
-    # history. In Slack interface runs, it can use assistant search.
+    # CLI runs use bot-token-compatible channel history. Slack interface
+    # runs include an action_token, so the provider can use assistant search.
     read_prompt = (
         "Find the 3 most recent messages in the #agents channel."
         "For each, author, and a one-line quote."

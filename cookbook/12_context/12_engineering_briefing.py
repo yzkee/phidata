@@ -45,8 +45,8 @@ provider_model = OpenAIResponses(id="gpt-5.4-mini")
 
 # Slack is read-only in this cookbook. ContextMode.agent exposes only
 # query_slack instead of the default query_slack + update_slack surface.
-# The provider's default read_mode="auto" uses bot-token channel reads
-# in CLI runs, and Slack assistant search when invoked from Slack.
+# CLI runs use bot-token channel reads. Slack interface runs include an
+# action_token, so the provider can use Slack assistant search.
 slack = SlackContextProvider(mode=ContextMode.agent, model=provider_model)
 
 project = FilesystemContextProvider(

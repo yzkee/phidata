@@ -23,7 +23,7 @@ back to ``SLACK_TOKEN`` since that's the variable agno's
 from __future__ import annotations
 
 from os import getenv
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from agno.agent import Agent
 from agno.context._utils import answer_from_run
@@ -36,9 +36,6 @@ if TYPE_CHECKING:
     from agno.models.base import Model
 
 
-SlackReadMode = Literal["auto", "bot_token", "assistant_search"]
-
-
 class SlackContextProvider(ContextProvider):
     """Read + write access to a Slack workspace via two tools."""
 
@@ -48,7 +45,6 @@ class SlackContextProvider(ContextProvider):
         token: str | None = None,
         id: str = "slack",
         name: str = "Slack",
-        read_mode: SlackReadMode = "auto",
         bot_read_instructions: str | None = None,
         assistant_search_instructions: str | None = None,
         write_instructions: str | None = None,
@@ -59,9 +55,6 @@ class SlackContextProvider(ContextProvider):
         self.token = token or getenv("SLACK_BOT_TOKEN") or getenv("SLACK_TOKEN")
         if not self.token:
             raise ValueError("SlackContextProvider: SLACK_BOT_TOKEN (or SLACK_TOKEN) is required")
-        if read_mode not in ("auto", "bot_token", "assistant_search"):
-            raise ValueError("SlackContextProvider: read_mode must be 'auto', 'bot_token', or 'assistant_search'")
-        self.read_mode = read_mode
         self.bot_read_instructions_text = bot_read_instructions or DEFAULT_SLACK_BOT_TOKEN_READ_INSTRUCTIONS
         self.assistant_search_instructions_text = (
             assistant_search_instructions or DEFAULT_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS
@@ -104,26 +97,16 @@ class SlackContextProvider(ContextProvider):
 
     def instructions(self) -> str:
         if self.mode == ContextMode.tools:
-            if self.read_mode == "assistant_search":
-                return (
-                    f"`{self.name}`: `search_workspace` for Slack topic, catch-up, and cross-channel queries. "
-                    "`search_workspace` requires Slack interface metadata with `action_token`."
-                )
             return (
                 f"`{self.name}`: `get_channel_history(channel)` for latest messages in a known channel; "
                 "`get_thread(channel, ts)` to expand a thread; `get_channel_info` / `get_user_info` "
                 "to resolve names. Pass channel names like `#agents` directly."
             )
-        if self.read_mode == "auto":
-            return (
-                f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack. "
-                "It automatically uses Slack assistant search when invoked from Slack, and bot-token "
-                "channel reads elsewhere. "
-                f"Use `{self.update_tool_name}(instruction)` to post a message."
-            )
         return (
-            f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack, "
-            f"or `{self.update_tool_name}(instruction)` to post a message."
+            f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack. "
+            "It automatically uses Slack assistant search when invoked from Slack, and bot-token "
+            "channel reads elsewhere. "
+            f"Use `{self.update_tool_name}(instruction)` to post a message."
         )
 
     # ------------------------------------------------------------------
@@ -139,8 +122,10 @@ class SlackContextProvider(ContextProvider):
         return [self._query_tool(), self._update_tool()]
 
     def _all_tools(self) -> list:
-        if self.read_mode == "assistant_search":
-            return [self._ensure_assistant_search_tools()]
+        # `mode=tools` is static: the provider cannot know whether a future
+        # tool call will carry Slack interface metadata. Expose the
+        # bot-token-compatible read surface so terminal runs never see the
+        # action-token-only search_workspace tool.
         return [self._ensure_bot_read_tools()]
 
     # ------------------------------------------------------------------
@@ -152,12 +137,6 @@ class SlackContextProvider(ContextProvider):
         return bool(run_context and run_context.metadata and run_context.metadata.get("action_token"))
 
     def _select_read_agent(self, run_context: RunContext | None) -> Agent:
-        if self.read_mode == "bot_token":
-            return self._ensure_bot_read_agent()
-        if self.read_mode == "assistant_search":
-            if not self._has_action_token(run_context):
-                raise RuntimeError("Slack assistant_search read mode requires run_context.metadata['action_token']")
-            return self._ensure_assistant_search_agent()
         if self._has_action_token(run_context):
             return self._ensure_assistant_search_agent()
         return self._ensure_bot_read_agent()

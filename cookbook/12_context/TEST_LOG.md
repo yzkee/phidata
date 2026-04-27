@@ -17,9 +17,9 @@ Parallel web search.
 **Result:** `py_compile` passed; targeted Ruff passed. Import smoke
 with dummy `OPENAI_API_KEY`, `PARALLEL_API_KEY`, and
 `SLACK_BOT_TOKEN` confirmed the outer agent exposes `query_slack`,
-`query_project`, and `query_web`; Slack `read_mode="auto"` exposes
-bot-token-compatible reads in CLI while keeping `search_workspace`
-isolated to the Slack assistant-search surface.
+`query_project`, and `query_web`; Slack exposes bot-token-compatible
+reads in CLI while keeping `search_workspace` isolated to the
+Slack-interface assistant-search surface.
 
 ---
 
