@@ -3,6 +3,26 @@
 All end-to-end runs used the demo venv (`.venvs/demo/bin/python`)
 against real OpenAI (`gpt-5.4` / `gpt-5.4-mini`).
 
+## 2026-04-27
+
+### 12_engineering_briefing.py
+
+**Status:** Smoke-only (live Slack + Parallel credentials not
+exercised locally)
+
+**Description:** Three-provider engineering briefing demo. Slack
+topics are matched against local project files and enriched with
+Parallel web search.
+
+**Result:** `py_compile` passed; targeted Ruff passed. Import smoke
+with dummy `OPENAI_API_KEY`, `PARALLEL_API_KEY`, and
+`SLACK_BOT_TOKEN` confirmed the outer agent exposes `query_slack`,
+`query_project`, and `query_web`; Slack `read_mode="auto"` exposes
+bot-token-compatible reads in CLI while keeping `search_workspace`
+isolated to the Slack assistant-search surface.
+
+---
+
 ## 2026-04-22
 
 ### 00_filesystem.py

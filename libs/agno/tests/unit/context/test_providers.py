@@ -319,6 +319,18 @@ def test_slack_status_reports_configured():
     assert "token configured" in status.detail
 
 
+def test_slack_read_surfaces_are_split_by_mode():
+    p = SlackContextProvider(token="xoxb-x")
+    bot_tools = p._ensure_bot_read_tools()
+    assistant_tools = p._ensure_assistant_search_tools()
+
+    assert p.read_mode == "auto"
+    assert "search_workspace" not in bot_tools.functions
+    assert "get_channel_history" in bot_tools.functions
+    assert "search_workspace" in assistant_tools.functions
+    assert "get_channel_history" not in assistant_tools.functions
+
+
 @pytest.mark.asyncio
 async def test_slack_aupdate_routes_through_write_agent(monkeypatch):
     """aupdate must hit the write sub-agent, not the read one."""
@@ -326,7 +338,7 @@ async def test_slack_aupdate_routes_through_write_agent(monkeypatch):
 
     p = SlackContextProvider(token="xoxb-x")
 
-    calls: dict[str, int] = {"read": 0, "write": 0}
+    calls: dict[str, int] = {"bot_read": 0, "write": 0}
 
     class _StubAgent:
         def __init__(self, bucket: str):
@@ -343,23 +355,17 @@ async def test_slack_aupdate_routes_through_write_agent(monkeypatch):
 
             return _Out()
 
-    p._read_agent = _StubAgent("read")  # type: ignore[assignment]
+    p._bot_read_agent = _StubAgent("bot_read")  # type: ignore[assignment]
     p._write_agent = _StubAgent("write")  # type: ignore[assignment]
 
     out = await p.aupdate("post hello to #ops")
     assert isinstance(out, Answer)
-    assert calls == {"read": 0, "write": 1}
+    assert calls == {"bot_read": 0, "write": 1}
     assert out.text == "write:post hello to #ops"
 
 
 @pytest.mark.asyncio
-async def test_slack_aquery_threads_action_token_metadata_to_subagent(monkeypatch):
-    """The BLOCKER this PR fixes: Slack's search_workspace needs
-    run_context.metadata["action_token"] to authenticate. If the
-    caller's RunContext has action_token in metadata, aquery must
-    forward it into sub_agent.arun(metadata=...) so the sub-agent's
-    call to search_workspace sees it.
-    """
+async def test_slack_auto_read_mode_uses_assistant_search_with_action_token(monkeypatch):
     from unittest.mock import AsyncMock, MagicMock
 
     from agno.context.provider import Answer
@@ -367,18 +373,13 @@ async def test_slack_aquery_threads_action_token_metadata_to_subagent(monkeypatc
 
     p = SlackContextProvider(token="xoxb-x")
 
-    # Replace the read sub-agent with a mock whose arun tracks kwargs.
-    # (After upstream's write-access split, aquery goes through
-    # _ensure_read_agent, not _ensure_agent.)
     mock_agent = MagicMock()
     mock_run_output = MagicMock()
     mock_run_output.get_content_as_string = MagicMock(return_value="mock answer")
     mock_run_output.content = "mock answer"
     mock_agent.arun = AsyncMock(return_value=mock_run_output)
-    monkeypatch.setattr(p, "_ensure_read_agent", lambda: mock_agent)
+    monkeypatch.setattr(p, "_ensure_assistant_search_agent", lambda: mock_agent)
 
-    # Caller's RunContext carries the action_token the Slack interface
-    # would have injected.
     rc = RunContext(
         run_id="r-slack-1",
         session_id="s-slack-1",
@@ -396,6 +397,32 @@ async def test_slack_aquery_threads_action_token_metadata_to_subagent(monkeypatc
     assert kwargs.get("user_id") == "U123"
     assert kwargs.get("session_id") == "s-slack-1"
     assert isinstance(answer, Answer)
+
+
+@pytest.mark.asyncio
+async def test_slack_auto_read_mode_uses_bot_read_without_action_token(monkeypatch):
+    from unittest.mock import AsyncMock, MagicMock
+
+    p = SlackContextProvider(token="xoxb-x")
+
+    mock_agent = MagicMock()
+    mock_run_output = MagicMock()
+    mock_run_output.get_content_as_string = MagicMock(return_value="bot answer")
+    mock_run_output.content = "bot answer"
+    mock_agent.arun = AsyncMock(return_value=mock_run_output)
+    monkeypatch.setattr(p, "_ensure_bot_read_agent", lambda: mock_agent)
+
+    answer = await p.aquery("read #agents")
+
+    mock_agent.arun.assert_awaited_once()
+    assert answer.text == "bot answer"
+
+
+def test_slack_assistant_search_mode_requires_action_token():
+    p = SlackContextProvider(token="xoxb-x", read_mode="assistant_search")
+
+    with pytest.raises(RuntimeError, match="action_token"):
+        p.query("search slack")
 
 
 # ---------------------------------------------------------------------------
