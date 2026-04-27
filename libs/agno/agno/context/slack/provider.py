@@ -45,8 +45,6 @@ class SlackContextProvider(ContextProvider):
         token: str | None = None,
         id: str = "slack",
         name: str = "Slack",
-        bot_read_instructions: str | None = None,
-        assistant_search_instructions: str | None = None,
         write_instructions: str | None = None,
         mode: ContextMode = ContextMode.default,
         model: Model | None = None,
@@ -55,10 +53,6 @@ class SlackContextProvider(ContextProvider):
         self.token = token or getenv("SLACK_BOT_TOKEN") or getenv("SLACK_TOKEN")
         if not self.token:
             raise ValueError("SlackContextProvider: SLACK_BOT_TOKEN (or SLACK_TOKEN) is required")
-        self.bot_read_instructions_text = bot_read_instructions or DEFAULT_SLACK_BOT_TOKEN_READ_INSTRUCTIONS
-        self.assistant_search_instructions_text = (
-            assistant_search_instructions or DEFAULT_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS
-        )
         self.write_instructions_text = (
             write_instructions if write_instructions is not None else DEFAULT_SLACK_WRITE_INSTRUCTIONS
         )
@@ -180,7 +174,7 @@ class SlackContextProvider(ContextProvider):
             id=f"{self.id}-bot-read",
             name=f"{self.name} Bot Read",
             model=self.model,
-            instructions=self.bot_read_instructions_text,
+            instructions=_SLACK_BOT_TOKEN_READ_INSTRUCTIONS,
             tools=[self._ensure_bot_read_tools()],
             markdown=True,
         )
@@ -190,7 +184,7 @@ class SlackContextProvider(ContextProvider):
             id=f"{self.id}-assistant-search",
             name=f"{self.name} Assistant Search",
             model=self.model,
-            instructions=self.assistant_search_instructions_text,
+            instructions=_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS,
             tools=[self._ensure_assistant_search_tools()],
             markdown=True,
         )
@@ -206,7 +200,7 @@ class SlackContextProvider(ContextProvider):
         )
 
 
-DEFAULT_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS = """\
+_SLACK_ASSISTANT_SEARCH_READ_INSTRUCTIONS = """\
 You answer questions by searching Slack through the Slack assistant
 search context API.
 
@@ -225,7 +219,7 @@ search returns nothing, say so plainly — don't speculate.
 """
 
 
-DEFAULT_SLACK_BOT_TOKEN_READ_INSTRUCTIONS = """\
+_SLACK_BOT_TOKEN_READ_INSTRUCTIONS = """\
 You answer questions by reading Slack with bot-token-compatible tools.
 
 Workflow:
