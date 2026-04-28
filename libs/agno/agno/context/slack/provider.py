@@ -149,6 +149,10 @@ class SlackContextProvider(ContextProvider):
         return self._default_tools()
 
     def _all_tools(self) -> list:
+        # mode=tools is static: the provider cannot know whether a future
+        # tool call will carry Slack interface metadata. Expose the
+        # bot-token-compatible read surface so terminal runs never see the
+        # action-token-only search_workspace tool.
         return [self._ensure_bot_read_tools()]
 
     # ------------------------------------------------------------------
@@ -344,6 +348,3 @@ You post messages to Slack on behalf of the caller.
 - Don't guess channel or user IDs. If a lookup returns nothing,
   stop and say so; never post to the wrong destination.
 """
-
-# Deprecated: Use _SLACK_BOT_TOKEN_READ_INSTRUCTIONS or _SLACK_ASSISTED_READ_INSTRUCTIONS
-DEFAULT_SLACK_READ_INSTRUCTIONS = _SLACK_BOT_TOKEN_READ_INSTRUCTIONS
