@@ -344,17 +344,16 @@ class SlackTools(Toolkit):
                     ),
                 )
 
-            channels = cast(List[Dict[str, Any]], response.get("channels") or [])
-            for ch in channels:
-                if ch.get("id") and ch.get("name"):
-                    self._cache_channel(_ResolvedChannel(id=ch["id"], name=ch["name"]))
-                if (ch.get("name") or "").lower() == name:
-                    resolved = _ResolvedChannel(id=ch["id"], name=ch["name"])
-                    self._cache_channel(resolved)
+            for ch in response.get("channels") or []:
+                ch_id, ch_name = ch.get("id"), ch.get("name")
+                if not (ch_id and ch_name):
+                    continue
+                resolved = _ResolvedChannel(id=ch_id, name=ch_name)
+                self._cache_channel(resolved)
+                if ch_name.lower() == name:
                     return resolved, None
 
-            metadata = response.get("response_metadata") or {}
-            cursor = metadata.get("next_cursor")
+            cursor = (response.get("response_metadata") or {}).get("next_cursor")
             if not cursor:
                 break
 
@@ -521,15 +520,16 @@ class SlackTools(Toolkit):
                     exclude_archived=True,
                 )
                 for ch in response.get("channels") or []:
-                    if ch.get("id") and ch.get("name"):
-                        self._cache_channel(_ResolvedChannel(id=ch["id"], name=ch["name"]))
-                        channels.append({
-                            "id": ch["id"],
-                            "name": ch["name"],
-                            "is_private": ch.get("is_private", False),
-                        })
-                metadata = response.get("response_metadata") or {}
-                cursor = metadata.get("next_cursor")
+                    ch_id, ch_name = ch.get("id"), ch.get("name")
+                    if not (ch_id and ch_name):
+                        continue
+                    self._cache_channel(_ResolvedChannel(id=ch_id, name=ch_name))
+                    channels.append({
+                        "id": ch_id,
+                        "name": ch_name,
+                        "is_private": ch.get("is_private", False),
+                    })
+                cursor = (response.get("response_metadata") or {}).get("next_cursor")
                 if not cursor:
                     break
             return json.dumps(channels)
