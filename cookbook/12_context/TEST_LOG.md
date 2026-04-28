@@ -11,15 +11,15 @@ against real OpenAI (`gpt-5.4` / `gpt-5.4-mini`).
 exercised locally)
 
 **Description:** Three-provider engineering briefing demo. Slack
-topics are matched against local project files and enriched with
+topics are matched against the local Agno workspace and enriched with
 Parallel web search.
 
 **Result:** `py_compile` passed; targeted Ruff passed. Import smoke
 with dummy `OPENAI_API_KEY`, `PARALLEL_API_KEY`, and
 `SLACK_BOT_TOKEN` confirmed the outer agent exposes `query_slack`,
-`query_project`, and `query_web`; Slack exposes bot-token-compatible
-reads in CLI while keeping `search_workspace` isolated to the
-Slack-interface assistant-search surface.
+`update_slack`, `query_agno`, and `query_web`; Slack exposes
+bot-token-compatible reads in CLI while adding `search_workspace` only
+when Slack interface metadata provides an action token.
 
 ---
 
