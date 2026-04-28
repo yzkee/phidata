@@ -323,43 +323,40 @@ class SlackTools(Toolkit):
             return resolved, None
 
         name = raw.removeprefix("#").lower()
+        cursor: Optional[str] = None
 
-        for types in ("public_channel", "private_channel"):
-            cursor: Optional[str] = None
-            while True:
-                try:
-                    response = self.client.conversations_list(
-                        types=types,
-                        limit=1000,
-                        cursor=cursor,
-                        exclude_archived=True,
-                    )
-                except SlackApiError as e:
-                    if types == "private_channel":
-                        return None, self._slack_error_payload(
-                            e,
-                            operation="conversations.list",
-                            channel=channel,
-                            hint=(
-                                "If this is a private channel, add groups:read, reinstall the app, "
-                                "invite the bot to the channel, or pass the channel ID directly."
-                            ),
-                        )
-                    return None, self._slack_error_payload(e, operation="conversations.list", channel=channel)
+        while True:
+            try:
+                response = self.client.conversations_list(
+                    types="public_channel,private_channel",
+                    limit=1000,
+                    cursor=cursor,
+                    exclude_archived=True,
+                )
+            except SlackApiError as e:
+                return None, self._slack_error_payload(
+                    e,
+                    operation="conversations.list",
+                    channel=channel,
+                    hint=(
+                        "If this is a private channel, add groups:read, reinstall the app, "
+                        "invite the bot to the channel, or pass the channel ID directly."
+                    ),
+                )
 
-                channels = cast(List[Dict[str, Any]], response.get("channels") or [])
-                for ch in channels:
-                    if ch.get("id") and ch.get("name"):
-                        self._cache_channel(_ResolvedChannel(id=ch["id"], name=ch["name"]))
-                    if (ch.get("name") or "").lower() == name:
-                        resolved = _ResolvedChannel(id=ch["id"], name=ch["name"])
-                        self._cache_channel(resolved)
-                        return resolved, None
+            channels = cast(List[Dict[str, Any]], response.get("channels") or [])
+            for ch in channels:
+                if ch.get("id") and ch.get("name"):
+                    self._cache_channel(_ResolvedChannel(id=ch["id"], name=ch["name"]))
+                if (ch.get("name") or "").lower() == name:
+                    resolved = _ResolvedChannel(id=ch["id"], name=ch["name"])
+                    self._cache_channel(resolved)
+                    return resolved, None
 
-                metadata = cast(Dict[str, Any], response.get("response_metadata") or {})
-                cursor = metadata.get("next_cursor") or ""
-                if not cursor:
-                    break
+            metadata = response.get("response_metadata") or {}
+            cursor = metadata.get("next_cursor")
+            if not cursor:
+                break
 
         return None, {
             "error": "channel_not_found",
@@ -511,36 +508,30 @@ class SlackTools(Toolkit):
         Returns:
             str: A JSON string containing a list of channels with their IDs and names.
         """
-        channel_types = ["public_channel"]
-        if include_private:
-            channel_types.append("private_channel")
-
+        types = "public_channel,private_channel" if include_private else "public_channel"
         channels: List[Dict[str, Any]] = []
+        cursor: Optional[str] = None
+
         try:
-            for channel_type in channel_types:
-                cursor: Optional[str] = None
-                while True:
-                    response = self.client.conversations_list(
-                        types=channel_type,
-                        limit=1000,
-                        cursor=cursor,
-                        exclude_archived=True,
-                    )
-                    channel_items = cast(List[Dict[str, Any]], response.get("channels") or [])
-                    for channel in channel_items:
-                        if channel.get("id") and channel.get("name"):
-                            self._cache_channel(_ResolvedChannel(id=channel["id"], name=channel["name"]))
-                            channels.append(
-                                {
-                                    "id": channel["id"],
-                                    "name": channel["name"],
-                                    "is_private": channel.get("is_private", False),
-                                }
-                            )
-                    metadata = cast(Dict[str, Any], response.get("response_metadata") or {})
-                    cursor = metadata.get("next_cursor") or ""
-                    if not cursor:
-                        break
+            while True:
+                response = self.client.conversations_list(
+                    types=types,
+                    limit=1000,
+                    cursor=cursor,
+                    exclude_archived=True,
+                )
+                for ch in response.get("channels") or []:
+                    if ch.get("id") and ch.get("name"):
+                        self._cache_channel(_ResolvedChannel(id=ch["id"], name=ch["name"]))
+                        channels.append({
+                            "id": ch["id"],
+                            "name": ch["name"],
+                            "is_private": ch.get("is_private", False),
+                        })
+                metadata = response.get("response_metadata") or {}
+                cursor = metadata.get("next_cursor")
+                if not cursor:
+                    break
             return json.dumps(channels)
         except SlackApiError as e:
             return json.dumps(self._slack_error_payload(e, operation="conversations.list"))

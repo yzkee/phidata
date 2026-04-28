@@ -393,8 +393,8 @@ def test_slack_status_reports_configured():
 
 def test_slack_read_surfaces_are_split_by_mode():
     p = SlackContextProvider(token="xoxb-x")
-    bot_tools = p._bot_read_tools
-    assisted_tools = p._assisted_read_tools
+    bot_tools = p._ensure_bot_read_tools()
+    assisted_tools = p._ensure_assisted_read_tools()
 
     assert "search_workspace" not in bot_tools.functions
     assert "get_channel_history" in bot_tools.functions
@@ -415,8 +415,8 @@ def test_slack_read_instructions_override_both_read_agents(monkeypatch):
     monkeypatch.setattr(slack_provider, "Agent", _StubAgent)
 
     p = SlackContextProvider(token="xoxb-x", read_instructions="Custom read policy.")
-    _ = p._bot_read_agent
-    _ = p._assisted_read_agent
+    _ = p._ensure_bot_read_agent()
+    _ = p._ensure_assisted_read_agent()
 
     assert captured["slack-bot-read"] == "Custom read policy."
     assert captured["slack-assisted-read"] == "Custom read policy."
@@ -434,8 +434,8 @@ def test_slack_default_read_instructions_stay_tool_specific(monkeypatch):
     monkeypatch.setattr(slack_provider, "Agent", _StubAgent)
 
     p = SlackContextProvider(token="xoxb-x")
-    _ = p._bot_read_agent
-    _ = p._assisted_read_agent
+    _ = p._ensure_bot_read_agent()
+    _ = p._ensure_assisted_read_agent()
 
     assert "get_channel_history" in captured["slack-bot-read"]
     assert "get_channel_history" in captured["slack-assisted-read"]
@@ -467,8 +467,8 @@ async def test_slack_aupdate_routes_through_write_agent(monkeypatch):
 
             return _Out()
 
-    p.__dict__["_bot_read_agent"] = _StubAgent("bot_read")
-    p.__dict__["_write_agent"] = _StubAgent("write")
+    p._bot_read_agent = _StubAgent("bot_read")
+    p._write_agent = _StubAgent("write")
 
     out = await p.aupdate("post hello to #ops")
     assert isinstance(out, Answer)
@@ -490,7 +490,7 @@ async def test_slack_uses_assisted_read_with_action_token(monkeypatch):
     mock_run_output.get_content_as_string = MagicMock(return_value="mock answer")
     mock_run_output.content = "mock answer"
     mock_agent.arun = AsyncMock(return_value=mock_run_output)
-    p.__dict__["_assisted_read_agent"] = mock_agent
+    p._assisted_read_agent = mock_agent
 
     rc = RunContext(
         run_id="r-slack-1",
@@ -522,7 +522,7 @@ async def test_slack_uses_bot_read_without_action_token(monkeypatch):
     mock_run_output.get_content_as_string = MagicMock(return_value="bot answer")
     mock_run_output.content = "bot answer"
     mock_agent.arun = AsyncMock(return_value=mock_run_output)
-    p.__dict__["_bot_read_agent"] = mock_agent
+    p._bot_read_agent = mock_agent
 
     answer = await p.aquery("read #agents")
 
