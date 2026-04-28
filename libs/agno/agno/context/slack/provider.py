@@ -23,6 +23,7 @@ back to ``SLACK_TOKEN`` since that's the variable agno's
 
 from __future__ import annotations
 
+from functools import cached_property
 from os import getenv
 from typing import TYPE_CHECKING
 
@@ -59,12 +60,6 @@ class SlackContextProvider(ContextProvider):
         self.write_instructions_text = (
             write_instructions if write_instructions is not None else DEFAULT_SLACK_WRITE_INSTRUCTIONS
         )
-        self._bot_read_tools: SlackTools | None = None
-        self._assisted_read_tools: SlackTools | None = None
-        self._write_tools: SlackTools | None = None
-        self._bot_read_agent: Agent | None = None
-        self._assisted_read_agent: Agent | None = None
-        self._write_agent: Agent | None = None
 
     def status(self) -> Status:
         return Status(ok=True, detail="slack (token configured)")
@@ -86,11 +81,11 @@ class SlackContextProvider(ContextProvider):
 
     def update(self, instruction: str, *, run_context: RunContext | None = None) -> Answer:
         kwargs = self._run_kwargs_for_sub_agent(run_context)
-        return answer_from_run(self._ensure_write_agent().run(instruction, **kwargs))
+        return answer_from_run(self._write_agent.run(instruction, **kwargs))
 
     async def aupdate(self, instruction: str, *, run_context: RunContext | None = None) -> Answer:
         kwargs = self._run_kwargs_for_sub_agent(run_context)
-        return answer_from_run(await self._ensure_write_agent().arun(instruction, **kwargs))
+        return answer_from_run(await self._write_agent.arun(instruction, **kwargs))
 
     def instructions(self) -> str:
         if self.mode == ContextMode.tools:
@@ -117,6 +112,8 @@ class SlackContextProvider(ContextProvider):
     def get_tools(self) -> list:
         if self.mode == ContextMode.tools:
             return self._all_tools()
+        if self.mode == ContextMode.agent:
+            return [self._query_tool()]
         return self._default_tools()
 
     def _all_tools(self) -> list:
@@ -124,7 +121,7 @@ class SlackContextProvider(ContextProvider):
         # tool call will carry Slack interface metadata. Expose the
         # bot-token-compatible read surface so terminal runs never see the
         # action-token-only search_workspace tool.
-        return [self._ensure_bot_read_tools()]
+        return [self._bot_read_tools]
 
     # ------------------------------------------------------------------
     # Internals
@@ -136,112 +133,98 @@ class SlackContextProvider(ContextProvider):
 
     def _select_read_agent(self, run_context: RunContext | None) -> Agent:
         if self._has_action_token(run_context):
-            return self._ensure_assisted_read_agent()
-        return self._ensure_bot_read_agent()
+            return self._assisted_read_agent
+        return self._bot_read_agent
 
     def _read_instructions(self, default: str) -> str:
         return self.read_instructions_text if self.read_instructions_text is not None else default
 
-    def _ensure_bot_read_tools(self) -> SlackTools:
-        if self._bot_read_tools is None:
-            self._bot_read_tools = SlackTools(
-                token=self.token,
-                enable_send_message=False,
-                enable_send_message_thread=False,
-                enable_upload_file=False,
-                enable_download_file=False,
-                enable_list_channels=True,
-                enable_get_channel_history=True,
-                enable_search_workspace=False,
-                enable_get_thread=True,
-                enable_list_users=True,
-                enable_get_user_info=True,
-                enable_get_channel_info=True,
-            )
-        return self._bot_read_tools
+    # ------------------------------------------------------------------
+    # Lazy-initialized tools and agents
+    # ------------------------------------------------------------------
 
-    def _ensure_assisted_read_tools(self) -> SlackTools:
-        if self._assisted_read_tools is None:
-            self._assisted_read_tools = SlackTools(
-                token=self.token,
-                enable_send_message=False,
-                enable_send_message_thread=False,
-                enable_upload_file=False,
-                enable_download_file=False,
-                enable_list_channels=True,
-                enable_get_channel_history=True,
-                enable_search_workspace=True,
-                enable_get_thread=True,
-                enable_list_users=True,
-                enable_get_user_info=True,
-                enable_get_channel_info=True,
-            )
-        return self._assisted_read_tools
+    @cached_property
+    def _bot_read_tools(self) -> SlackTools:
+        return SlackTools(
+            token=self.token,
+            enable_send_message=False,
+            enable_send_message_thread=False,
+            enable_upload_file=False,
+            enable_download_file=False,
+            enable_list_channels=True,
+            enable_get_channel_history=True,
+            enable_search_workspace=False,
+            enable_get_thread=True,
+            enable_list_users=True,
+            enable_get_user_info=True,
+            enable_get_channel_info=True,
+        )
 
-    def _ensure_write_tools(self) -> SlackTools:
-        # Writer gets just enough to resolve #channel / @user names and post.
-        # No search / history / threads / uploads / downloads — if the write
-        # instruction needs context, compose query_slack → update_slack at
-        # the caller.
-        if self._write_tools is None:
-            self._write_tools = SlackTools(
-                token=self.token,
-                enable_send_message=True,
-                enable_send_message_thread=True,
-                enable_upload_file=False,
-                enable_download_file=False,
-                enable_list_channels=True,
-                enable_get_channel_history=False,
-                enable_search_workspace=False,
-                enable_get_thread=False,
-                enable_list_users=True,
-                enable_get_user_info=True,
-                enable_get_channel_info=True,
-            )
-        return self._write_tools
+    @cached_property
+    def _assisted_read_tools(self) -> SlackTools:
+        return SlackTools(
+            token=self.token,
+            enable_send_message=False,
+            enable_send_message_thread=False,
+            enable_upload_file=False,
+            enable_download_file=False,
+            enable_list_channels=True,
+            enable_get_channel_history=True,
+            enable_search_workspace=True,
+            enable_get_thread=True,
+            enable_list_users=True,
+            enable_get_user_info=True,
+            enable_get_channel_info=True,
+        )
 
-    def _ensure_bot_read_agent(self) -> Agent:
-        if self._bot_read_agent is None:
-            self._bot_read_agent = self._build_bot_read_agent()
-        return self._bot_read_agent
+    @cached_property
+    def _write_tools(self) -> SlackTools:
+        # Writer gets just enough to resolve #channel / @user names and post
+        return SlackTools(
+            token=self.token,
+            enable_send_message=True,
+            enable_send_message_thread=True,
+            enable_upload_file=False,
+            enable_download_file=False,
+            enable_list_channels=True,
+            enable_get_channel_history=False,
+            enable_search_workspace=False,
+            enable_get_thread=False,
+            enable_list_users=True,
+            enable_get_user_info=True,
+            enable_get_channel_info=True,
+        )
 
-    def _ensure_assisted_read_agent(self) -> Agent:
-        if self._assisted_read_agent is None:
-            self._assisted_read_agent = self._build_assisted_read_agent()
-        return self._assisted_read_agent
-
-    def _ensure_write_agent(self) -> Agent:
-        if self._write_agent is None:
-            self._write_agent = self._build_write_agent()
-        return self._write_agent
-
-    def _build_bot_read_agent(self) -> Agent:
+    @cached_property
+    def _bot_read_agent(self) -> Agent:
         return Agent(
             id=f"{self.id}-bot-read",
             name=f"{self.name} Bot Read",
             model=self.model,
             instructions=self._read_instructions(_SLACK_BOT_TOKEN_READ_INSTRUCTIONS),
-            tools=[self._ensure_bot_read_tools()],
+            tools=[self._bot_read_tools],
             markdown=True,
         )
 
-    def _build_assisted_read_agent(self) -> Agent:
+    @cached_property
+    def _assisted_read_agent(self) -> Agent:
         return Agent(
             id=f"{self.id}-assisted-read",
             name=f"{self.name} Assisted Read",
             model=self.model,
             instructions=self._read_instructions(_SLACK_ASSISTED_READ_INSTRUCTIONS),
-            tools=[self._ensure_assisted_read_tools()],
+            tools=[self._assisted_read_tools],
             markdown=True,
         )
 
-    def _build_write_agent(self) -> Agent:
+    @cached_property
+    def _write_agent(self) -> Agent:
         return Agent(
             id=f"{self.id}-write",
             name=f"{self.name} Write",
             model=self.model,
             instructions=self.write_instructions_text,
-            tools=[self._ensure_write_tools()],
+            tools=[self._write_tools],
             markdown=True,
         )
 
@@ -328,3 +311,6 @@ You post messages to Slack on behalf of the caller.
 - Don't guess channel or user IDs. If a lookup returns nothing,
   stop and say so; never post to the wrong destination.
 """
+
+# Deprecated: Use _SLACK_BOT_TOKEN_READ_INSTRUCTIONS or _SLACK_ASSISTED_READ_INSTRUCTIONS
+DEFAULT_SLACK_READ_INSTRUCTIONS = _SLACK_BOT_TOKEN_READ_INSTRUCTIONS
