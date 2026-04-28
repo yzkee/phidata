@@ -324,16 +324,23 @@ class SlackTools(Toolkit):
 
         name = raw.removeprefix("#").lower()
         cursor: Optional[str] = None
+        # Try public+private first; fall back to public-only if groups:read is missing
+        channel_types = "public_channel,private_channel"
 
         while True:
             try:
                 response = self.client.conversations_list(
-                    types="public_channel,private_channel",
+                    types=channel_types,
                     limit=1000,
                     cursor=cursor,
                     exclude_archived=True,
                 )
             except SlackApiError as e:
+                if e.response.get("error") == "missing_scope" and "private" in channel_types:
+                    # Bot lacks groups:read - retry with public channels only
+                    channel_types = "public_channel"
+                    cursor = None
+                    continue
                 return None, self._slack_error_payload(
                     e,
                     operation="conversations.list",
