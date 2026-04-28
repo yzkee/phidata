@@ -53,9 +53,11 @@ if __name__ == "__main__":
     prompt = (
         "Pull the 10 most recent messages from #agents, pick 2 active topics, "
         "connect each to local codebase context, and find one current external "
-        "reference for each. Output a markdown table with columns: Topic, Slack "
-        "signal, Codebase context, External reference, Sync question. Then post "
-        "the table in #test-agents."
+        "reference for each. If the codebase has no clear match for a topic, "
+        "use web search to fill that context and say the local match was not "
+        "found. Output a markdown table with columns: Topic, Slack signal, "
+        "Codebase context, External reference, Sync question. Then post the "
+        "table in #test-agents."
     )
     print(f"> {prompt}\n")
     asyncio.run(agent.aprint_response(prompt))
