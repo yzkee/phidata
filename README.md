@@ -50,14 +50,17 @@ from agno.tools.workspace import Workspace
 workbench = Agent(
     name="Workbench",
     model="openai:gpt-5.4",
-    db=SqliteDb(db_file="agno.db"),
-    tools=[Workspace(".")],         # read, write, edit, shell
+    tools=[Workspace(".",
+        allowed=["read", "list", "search"],
+        confirm=["write", "edit", "delete", "shell"],
+    )],
     enable_agentic_memory=True,
     add_history_to_context=True,
     num_history_runs=3,
 )
 
-agent_os = AgentOS(agents=[workbench], tracing=True)
+# Serve via AgentOS → streaming, auth, session isolation, API endpoints
+agent_os = AgentOS(agents=[workbench], tracing=True, db=SqliteDb(db_file="agno.db"))
 app = agent_os.get_app()
 ```
 
@@ -153,7 +156,7 @@ API at `http://localhost:8000`. OpenAPI spec at `http://localhost:8000/docs`.
 The [AgentOS UI](https://os.agno.com) is your control plane. Use it to chat with your agents, inspect runs, view traces, manage sessions, and operate the system.
 
 1. Open [os.agno.com](https://os.agno.com) and sign in.
-2. Click **"Add new OS"** in the top navigation.
+2. Click **"Connect OS"**
 3. Select **"Local"** to connect to a local AgentOS.
 4. Enter your endpoint URL (default: `http://localhost:8000`).
 5. Name it "Local AgentOS" and click **"Connect"**.
@@ -163,6 +166,8 @@ Open Chat, select your agent, and ask:
 > Tell me more about the project and the key files
 
 The agent reads your workspace and answers grounded in what it actually finds. Try a follow-up like "create a NOTES.md with three key takeaways". The run pauses for your approval before the file is written, since `write_file` is a confirm-required tool by default.
+
+https://github.com/user-attachments/assets/adb38f55-1d9d-463e-8ca9-966bb6bdc37a
 
 ## What AgentOS gives you
 
