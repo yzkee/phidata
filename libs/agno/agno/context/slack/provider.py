@@ -94,6 +94,8 @@ class SlackContextProvider(ContextProvider):
                 "`get_thread(channel, ts)` to expand a thread; `get_channel_info` / `get_user_info` "
                 "to resolve names. Pass channel names like `#agents` directly."
             )
+        if self.mode == ContextMode.agent:
+            return f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack."
         return (
             f"`{self.name}`: call `{self.query_tool_name}(question)` to read Slack. "
             f"Use `{self.update_tool_name}(instruction)` to post a message."
