@@ -88,7 +88,6 @@ OPENAI_API_KEY=... PARALLEL_API_KEY=... SLACK_BOT_TOKEN=xoxb-... \
     .venvs/demo/bin/python cookbook/12_context/09_web_plus_slack.py
 
 # Advanced briefing demo (Slack topics -> codebase workspace -> Parallel web)
-# For private channels, prefer SLACK_CHANNEL=C... and invite the bot to the channel.
-OPENAI_API_KEY=... PARALLEL_API_KEY=... SLACK_BOT_TOKEN=xoxb-... SLACK_CHANNEL=#agents \
+OPENAI_API_KEY=... PARALLEL_API_KEY=... SLACK_BOT_TOKEN=xoxb-... \
     .venvs/demo/bin/python cookbook/12_context/12_engineering_briefing.py
 ```
