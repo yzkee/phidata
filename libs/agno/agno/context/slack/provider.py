@@ -94,6 +94,12 @@ class SlackContextProvider(ContextProvider):
         return answer_from_run(await self._ensure_write_agent().arun(instruction, **kwargs))
 
     def instructions(self) -> str:
+        """Generate guidance for the calling agent based on mode.
+
+        tools  — raw SlackTools surface, caller manages tool calls directly
+        agent  — read-only query tool, no write access
+        default — both query and update tools via sub-agents
+        """
         if self.mode == ContextMode.tools:
             return (
                 f"`{self.name}`: `get_channel_history(channel)` for latest messages in a known channel; "
@@ -110,6 +116,9 @@ class SlackContextProvider(ContextProvider):
     # ------------------------------------------------------------------
     # Mode resolution
     # ------------------------------------------------------------------
+    # Sub-agents by default — seven flat SlackTools methods bloat the
+    # calling agent's prompt. Splitting reads/writes keeps each sub-agent
+    # scope minimal. mode=tools surfaces raw read tools for direct use.
 
     def _default_tools(self) -> list:
         return [self._query_tool(), self._update_tool()]
