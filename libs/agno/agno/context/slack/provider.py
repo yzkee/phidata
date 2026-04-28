@@ -114,6 +114,30 @@ class SlackContextProvider(ContextProvider):
     def _default_tools(self) -> list:
         return [self._query_tool(), self._update_tool()]
 
+    def _query_tool(self):
+        query_tool = super()._query_tool()
+        query_tool.description = (
+            "Read Slack with a natural-language request. Use for channel history, workspace search, "
+            "threads, and user or channel lookups."
+        )
+        query_tool.instructions = (
+            "Call this for Slack reads. For exact channel requests, include the channel name or ID. "
+            "For broad catch-up or topic requests, describe the topic and scope."
+        )
+        return query_tool
+
+    def _update_tool(self):
+        update_tool = super()._update_tool()
+        update_tool.description = (
+            "Post a Slack message or thread reply with a natural-language instruction. Include the "
+            "destination channel and the exact message to send."
+        )
+        update_tool.instructions = (
+            "If the user asks to post, send, or share something in Slack, call this tool before the "
+            "final response. Only say you cannot post if this tool returns an error."
+        )
+        return update_tool
+
     def get_tools(self) -> list:
         if self.mode == ContextMode.tools:
             return self._all_tools()

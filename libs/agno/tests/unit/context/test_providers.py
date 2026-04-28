@@ -384,6 +384,15 @@ def test_slack_default_surface_is_query_plus_update():
     assert [t.name for t in tools] == ["query_slack", "update_slack"]
 
 
+def test_slack_wrapped_tools_are_self_describing():
+    p = SlackContextProvider(token="xoxb-x")
+    tools = {tool.name: tool for tool in p.get_tools()}
+
+    assert "Read Slack" in (tools["query_slack"].description or "")
+    assert "Post a Slack message" in (tools["update_slack"].description or "")
+    assert "call this tool before the final response" in (tools["update_slack"].instructions or "")
+
+
 def test_slack_status_reports_configured():
     p = SlackContextProvider(token="xoxb-x")
     status = p.status()
