@@ -6,7 +6,7 @@ Three sources, one agent.
 
   Slack      what the team is talking about right now
   Workspace  what this repo already knows about it
-  Web        what the current external reference looks like
+  Web        fallback context when the repo has no clear match
 
 The main agent does synthesis. Each provider owns its own mess.
 
@@ -51,13 +51,14 @@ if __name__ == "__main__":
     print(f"web      = {web.status()}\n")
 
     prompt = (
-        "Pull the 10 most recent messages from #agents, pick 2 active topics, "
-        "connect each to local codebase context, and find one current external "
-        "reference for each. If the codebase has no clear match for a topic, "
-        "use web search to fill that context and say the local match was not "
-        "found. Output a markdown table with columns: Topic, Slack signal, "
-        "Codebase context, External reference, Sync question. Then post the "
-        "table in #test-agents."
+        "First call query_slack to read the 10 most recent messages from #agents and pick "
+        "2 active topics. Do not call query_agno until query_slack returns those topics. "
+        "For each topic, then call query_agno to look for local codebase context. Only call "
+        "query_web when query_agno has no clear local match for that topic; use web search "
+        "to fill the missing context and say the local match was not found. Write a "
+        "Slack-friendly numbered list, not a markdown table. For each topic include: Topic, "
+        "Slack signal, Codebase context, External fallback if used, Sync question. Then post "
+        "the list in #test-agents."
     )
     print(f"> {prompt}\n")
     asyncio.run(agent.aprint_response(prompt))

@@ -390,7 +390,9 @@ def test_slack_wrapped_tools_are_self_describing():
 
     assert "Read Slack" in (tools["query_slack"].description or "")
     assert "Post a Slack message" in (tools["update_slack"].description or "")
-    assert "call this tool before the final response" in (tools["update_slack"].instructions or "")
+    assert "before the final response" in (tools["update_slack"].description or "")
+    assert tools["query_slack"].instructions is None
+    assert tools["update_slack"].instructions is None
 
 
 def test_slack_status_reports_configured():
