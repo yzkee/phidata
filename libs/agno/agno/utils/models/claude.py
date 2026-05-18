@@ -87,6 +87,25 @@ ROLE_MAP = {
 }
 
 
+def _anthropic_block_identity(block: Any) -> Optional[Tuple[str, str]]:
+    """Return a stable identity key for an Anthropic content block, or None if untrackable.
+
+    Server tool blocks pair a ``server_tool_use`` (carrying ``id``) with a result block
+    (carrying ``tool_use_id`` referencing that id). The (type, id-or-tool_use_id) tuple
+    lets us dedupe across provider_data["server_tool_blocks"] and list-shaped message.content
+    without dropping blocks that exist in only one source.
+    """
+    if not isinstance(block, dict):
+        return None
+    block_type = block.get("type")
+    if not block_type:
+        return None
+    block_id = block.get("id") or block.get("tool_use_id")
+    if not isinstance(block_id, str):
+        return None
+    return (block_type, block_id)
+
+
 def _anthropic_coerce_content_block(item: Any) -> Optional[Any]:
     """Normalize a stored message content item into an Anthropic Messages API block dict."""
     if item is None:
@@ -96,11 +115,12 @@ def _anthropic_coerce_content_block(item: Any) -> Optional[Any]:
     model_dump = getattr(item, "model_dump", None)
     if callable(model_dump):
         try:
-            dumped = model_dump(exclude_none=True)
-            if isinstance(dumped, dict) and dumped.get("type"):
-                return dumped
-        except Exception:
-            pass
+            block_dict = model_dump(exclude_none=True)
+        except Exception as e:
+            log_warning(f"Failed to serialize Anthropic content block of type {type(item).__name__}: {e}")
+            return None
+        if isinstance(block_dict, dict) and block_dict.get("type"):
+            return block_dict
     return None
 
 
@@ -501,17 +521,12 @@ def format_messages(
             if message.redacted_reasoning_content is not None:
                 from anthropic.types import RedactedThinkingBlock
 
-                content.append(
-                    RedactedThinkingBlock(data=message.redacted_reasoning_content, type="redacted_reasoning_content")
-                )
+                content.append(RedactedThinkingBlock(data=message.redacted_reasoning_content, type="redacted_thinking"))
 
-            # Reconstruct server tool blocks (web_fetch, web_search, etc.) from provider_data
-            # Inserted between thinking and text blocks to match Anthropic's native ordering
-            if message.provider_data and message.provider_data.get("server_tool_blocks"):
-                for block_dict in message.provider_data["server_tool_blocks"]:
-                    content.append(block_dict)
-
+            # Extract structured blocks from list-shaped content (used when callers persist and
+            # rehydrate full assistant turns rather than the text-only + provider_data split).
             structured_from_list: List[Any] = []
+            list_block_identities: set = set()
             if isinstance(message.content, list):
                 for item in message.content:
                     blk = _anthropic_coerce_content_block(item)
@@ -520,7 +535,20 @@ def format_messages(
                     block_type = blk.get("type") if isinstance(blk, dict) else None
                     if block_type == "tool_use" and message.tool_calls:
                         continue
+                    identity = _anthropic_block_identity(blk)
+                    if identity is not None:
+                        list_block_identities.add(identity)
                     structured_from_list.append(blk)
+
+            # Reconstruct server tool blocks (web_fetch, web_search, etc.) from provider_data.
+            # Merge by identity (type, id-or-tool_use_id) so blocks already present in list-content
+            # aren't duplicated, but blocks that exist only in provider_data are still emitted.
+            if message.provider_data and message.provider_data.get("server_tool_blocks"):
+                for block_dict in message.provider_data["server_tool_blocks"]:
+                    identity = _anthropic_block_identity(block_dict)
+                    if identity is not None and identity in list_block_identities:
+                        continue
+                    content.append(block_dict)
 
             if structured_from_list:
                 content.extend(structured_from_list)
@@ -548,7 +576,13 @@ def format_messages(
                 normalized_blocks: List[Any] = []
                 for item in tool_result:
                     coerced = _anthropic_coerce_content_block(item)
-                    normalized_blocks.append(coerced if coerced is not None else item)
+                    if coerced is not None:
+                        normalized_blocks.append(coerced)
+                    else:
+                        # Fall back to a text block so unknown items still reach the model rather
+                        # than being silently dropped or breaking the request shape.
+                        log_warning(f"Coercing non-block tool_result item of type {type(item).__name__} to text")
+                        normalized_blocks.append({"type": "text", "text": str(item)})
                 tool_payload: Union[str, List[Any]] = normalized_blocks
             else:
                 tool_payload = str(tool_result)
