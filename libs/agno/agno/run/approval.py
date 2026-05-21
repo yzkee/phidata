@@ -472,6 +472,10 @@ def check_and_apply_approval_resolution(db: Any, run_id: str, run_response: Any)
     resolution_data = approval.get("resolution_data")
     _apply_approval_to_tools(all_approval_tools, status, resolution_data)
 
+    # Expose the resolved approval record to post-hooks via a typed attribute
+    # on RunOutput / TeamRunOutput.
+    run_response.resolved_approval = approval
+
 
 async def acheck_and_apply_approval_resolution(db: Any, run_id: str, run_response: Any) -> None:
     """Async variant of check_and_apply_approval_resolution."""
@@ -500,6 +504,10 @@ async def acheck_and_apply_approval_resolution(db: Any, run_id: str, run_respons
 
     resolution_data = approval.get("resolution_data")
     _apply_approval_to_tools(all_approval_tools, status, resolution_data)
+
+    # Expose the resolved approval record to post-hooks via a typed attribute
+    # on RunOutput / TeamRunOutput.
+    run_response.resolved_approval = approval
 
 
 async def acreate_audit_approval(
