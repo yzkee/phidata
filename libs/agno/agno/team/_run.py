@@ -6329,7 +6329,7 @@ def _continue_run_stream(
 
 
 async def _acontinue_run_background_stream(
-    team: "Team",
+    team: Team,
     run_context: RunContext,
     session_id: str,
     run_response: Optional[TeamRunOutput] = None,
@@ -6360,8 +6360,6 @@ async def _acontinue_run_background_stream(
     2. Spawns a detached asyncio.Task that runs _acontinue_run_stream
     3. Buffers events (via event_buffer) and publishes to SSE subscribers
     4. Yields SSE-formatted strings via an asyncio.Queue
-
-    See https://github.com/agno-agi/agno/issues/8134
     """
     from agno.team._session import asave_session
     from agno.team._storage import _aread_or_create_session, _update_metadata
