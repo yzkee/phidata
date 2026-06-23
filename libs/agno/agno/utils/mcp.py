@@ -65,7 +65,10 @@ def get_entrypoint_for_tool(
 
             # Return an error if the tool call failed
             if result.isError:
-                return ToolResult(content=f"Error from MCP tool '{tool_name}': {result.content}")
+                return ToolResult(
+                    content=f"Error from MCP tool '{tool_name}': {result.content}",
+                    metadata=result.meta,
+                )
 
             # Process the result content
             response_str = ""
@@ -145,6 +148,7 @@ def get_entrypoint_for_tool(
 
             return ToolResult(
                 content=response_str.strip(),
+                metadata=result.meta,
                 images=images if images else None,
             )
 

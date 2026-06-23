@@ -1,8 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from mcp.types import CallToolResult, TextContent
 
-from agno.tools.function import Function, FunctionCall
+from agno.tools.function import Function, FunctionCall, ToolResult
 from agno.tools.mcp import MCPTools, MultiMCPTools
 from agno.tools.mcp.params import SSEClientParams, StreamableHTTPClientParams
 from agno.utils.mcp import get_entrypoint_for_tool
@@ -1034,6 +1035,57 @@ async def test_parallel_calls_no_deadlock_with_timeout():
             assert all(s is results[0] for s in results)
 
 
+@pytest.mark.asyncio
+async def test_mcp_tool_result_preserves_meta():
+    mock_tool = MagicMock()
+    mock_tool.name = "get_data"
+
+    session = AsyncMock()
+    session.send_ping = AsyncMock()
+    session.call_tool = AsyncMock(
+        return_value=CallToolResult(
+            content=[TextContent(type="text", text="hello")],
+            isError=False,
+            _meta={"trace_id": "abc-123"},
+        )
+    )
+
+    entrypoint = get_entrypoint_for_tool(mock_tool, session)
+    result = await entrypoint()
+
+    assert result.content == "hello"
+    assert result.metadata == {"trace_id": "abc-123"}
+
+
+@pytest.mark.asyncio
+async def test_mcp_tool_error_result_preserves_meta():
+    mock_tool = MagicMock()
+    mock_tool.name = "get_data"
+
+    session = AsyncMock()
+    session.send_ping = AsyncMock()
+    session.call_tool = AsyncMock(
+        return_value=CallToolResult(
+            content=[TextContent(type="text", text="upstream error")],
+            isError=True,
+            _meta={"trace_id": "err-456"},
+        )
+    )
+
+    entrypoint = get_entrypoint_for_tool(mock_tool, session)
+    result = await entrypoint()
+
+    assert "Error from MCP tool 'get_data'" in result.content
+    assert result.metadata == {"trace_id": "err-456"}
+
+
+def test_tool_result_model_dump_roundtrip_preserves_metadata():
+    tool_result = ToolResult(content="hello", metadata={"trace_id": "abc-123"})
+    payload = tool_result.model_dump()
+    restored = ToolResult.model_validate(payload)
+    assert restored.metadata == {"trace_id": "abc-123"}
+
+
 # =============================================================================
 # Tool-argument-name collision tests
 # =============================================================================
@@ -1053,6 +1105,7 @@ def _make_session_returning(content_text: str):
     result = MagicMock()
     result.isError = False
     result.content = [TextContent(type="text", text=content_text)]
+    result.meta = None
 
     session = AsyncMock()
     session.send_ping = AsyncMock()
