@@ -1,49 +1,18 @@
 import json
 import os
-from functools import wraps
 from typing import Any, Dict, List, Literal, Optional, Set
 from urllib.parse import urlencode
 
 from agno.tools import Toolkit
-from agno.utils.log import log_error
-
-
-def google_authenticate(service_name: str):
-    """Shared auth decorator for all Google toolkits.
-
-    Each toolkit creates a module-level alias:
-        authenticate = google_authenticate("gmail")
-
-    Expects the toolkit class to define:
-        - self.creds: Google OAuth credentials
-        - self.service: Built API client (set by _build_service)
-        - self._auth(): Loads or refreshes credentials
-        - self._build_service(): Returns build(api_name, api_version, credentials=self.creds)
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if not self.creds or not self.creds.valid:
-                try:
-                    self._auth()
-                except Exception as e:
-                    log_error(f"{service_name.title()} authentication failed: {str(e)}")
-                    return json.dumps({"error": f"{service_name.title()} authentication failed: {e}"})
-            if not self.service:
-                try:
-                    self.service = self._build_service()
-                except Exception as e:
-                    log_error(f"{service_name.title()} service initialization failed: {str(e)}")
-                    return json.dumps({"error": f"{service_name.title()} service initialization failed: {e}"})
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
 
 
 class GoogleAuth(Toolkit):
+    """Toolkit that exposes authenticate_google tool for web/chat UI OAuth flows.
+
+    Use this when run_local_server() won't work (e.g., chatbot interfaces).
+    The agent calls authenticate_google() to get an OAuth URL for the user.
+    """
+
     def __init__(
         self,
         client_id: Optional[str] = None,
@@ -61,17 +30,17 @@ class GoogleAuth(Toolkit):
         self.register(self.authenticate_google)
 
     def register_service(self, service: str, scopes: List[str]) -> None:
+        """Register a Google service and its scopes for URL generation."""
         self._services[service] = scopes
 
     def authenticate_google(self, services: List[Literal["gmail", "calendar", "drive", "sheets", "slides"]]) -> str:
-        """
-        Get the Google OAuth URL for the user to authenticate their Google account.
+        """Get the Google OAuth URL for the user to authenticate their Google account.
 
         Args:
-            services (List[str]): Google services to authenticate.
+            services: Google services to authenticate (gmail, calendar, drive, sheets, slides).
 
         Returns:
-            str: JSON string containing the OAuth URL or error message
+            JSON string containing the OAuth URL or error message.
         """
         scopes: Set[str] = set()
         for service in services:

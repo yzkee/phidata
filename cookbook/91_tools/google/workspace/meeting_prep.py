@@ -16,20 +16,32 @@ Key concepts:
 - add_datetime_to_context: agent knows "now" for finding the next meeting
 
 Setup:
-1. Enable both Calendar API and Gmail API at https://console.cloud.google.com
-2. Export GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_PROJECT_ID env vars
-3. pip install openai google-api-python-client google-auth-httplib2 google-auth-oauthlib
-4. First run opens browser for OAuth consent (grants both Calendar + Gmail access)
-   The same token.json works for both APIs if scopes include both.
+  1. Enable Calendar API and Gmail API at https://console.cloud.google.com
+  2. Create OAuth 2.0 credentials (Desktop app)
+  3. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
+
+First run opens browser for OAuth consent, saves encrypted token to DB.
+Subsequent runs load the encrypted token — no re-auth needed.
+
+Run:
+  .venvs/demo/bin/python cookbook/91_tools/google/workspace/meeting_prep.py
 """
 
 from typing import List, Literal, Optional
 
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
+from agno.db.sqlite import SqliteDb
+from agno.models.openai import OpenAIResponses
+from agno.tools.google.auth import AuthConfig
 from agno.tools.google.calendar import GoogleCalendarTools
 from agno.tools.google.gmail import GmailTools
+from agno.utils.encryption import generate_encryption_key  # noqa: F401
 from pydantic import BaseModel, Field
+
+# Token encryption: set GOOGLE_TOKEN_ENCRYPTION_KEY env var (recommended)
+# Or pass explicitly: AuthConfig(db=db, token_encryption_key=generate_encryption_key())
+db = SqliteDb(db_file="tmp/meeting_prep.db")
+auth = AuthConfig(db=db)
 
 
 class AttendeeInfo(BaseModel):
@@ -76,19 +88,21 @@ class MeetingPrepBrief(BaseModel):
 
 agent = Agent(
     name="Meeting Prep Agent",
-    model=OpenAIChat(id="gpt-4o"),
+    model=OpenAIResponses(id="gpt-5.5"),
     tools=[
         GoogleCalendarTools(
+            auth=auth,
             create_event=False,
             update_event=False,
             delete_event=False,
         ),
         GmailTools(
+            auth=auth,
             include_tools=[
                 "search_emails",
                 "get_emails_by_context",
                 "get_thread",
-            ]
+            ],
         ),
     ],
     instructions=[
