@@ -131,6 +131,12 @@ class BaseRunOutputEvent:
             else:
                 _dict["response_audio"] = self.response_audio
 
+        if hasattr(self, "image") and self.image is not None:
+            if isinstance(self.image, Image):
+                _dict["image"] = self.image.to_dict()
+            else:
+                _dict["image"] = self.image
+
         if hasattr(self, "citations") and self.citations is not None:
             if isinstance(self.citations, Citations):
                 _dict["citations"] = self.citations.model_dump(exclude_none=True)
@@ -229,6 +235,10 @@ class BaseRunOutputEvent:
         response_audio = data.pop("response_audio", None)
         if response_audio:
             data["response_audio"] = Audio.model_validate(response_audio)
+
+        image = data.pop("image", None)
+        if image:
+            data["image"] = Image.model_validate(image)
 
         additional_input = data.pop("additional_input", None)
         if additional_input is not None:
