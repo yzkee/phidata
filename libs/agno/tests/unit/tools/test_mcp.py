@@ -1036,6 +1036,80 @@ async def test_parallel_calls_no_deadlock_with_timeout():
 
 
 @pytest.mark.asyncio
+async def test_mcp_tool_result_preserves_structured_content():
+    mock_tool = MagicMock()
+    mock_tool.name = "get_data"
+
+    session = AsyncMock()
+    session.send_ping = AsyncMock()
+    session.call_tool = AsyncMock(
+        return_value=CallToolResult(
+            content=[TextContent(type="text", text="hello")],
+            isError=False,
+            structuredContent={"id": "u1", "name": "Ada"},
+        )
+    )
+
+    entrypoint = get_entrypoint_for_tool(mock_tool, session)
+    result = await entrypoint()
+
+    assert result.structured_content == {"id": "u1", "name": "Ada"}
+
+
+@pytest.mark.asyncio
+async def test_mcp_tool_error_result_preserves_structured_content():
+    mock_tool = MagicMock()
+    mock_tool.name = "get_data"
+
+    session = AsyncMock()
+    session.send_ping = AsyncMock()
+    session.call_tool = AsyncMock(
+        return_value=CallToolResult(
+            content=[TextContent(type="text", text="upstream error")],
+            isError=True,
+            structuredContent={"error_details": {"code": 42}},
+        )
+    )
+
+    entrypoint = get_entrypoint_for_tool(mock_tool, session)
+    result = await entrypoint()
+
+    assert "Error from MCP tool 'get_data'" in result.content
+    assert result.structured_content == {"error_details": {"code": 42}}
+
+
+@pytest.mark.asyncio
+async def test_mcp_tool_result_handles_missing_structured_content_attr():
+    # mcp < 1.10.0 CallToolResult has no structuredContent attribute; the wrapper
+    # must fall back to None instead of raising AttributeError.
+    mock_tool = MagicMock()
+    mock_tool.name = "get_data"
+
+    result = MagicMock()
+    result.isError = False
+    result.content = [TextContent(type="text", text="hello")]
+    result.meta = None
+    del result.structuredContent
+
+    session = AsyncMock()
+    session.send_ping = AsyncMock()
+    session.call_tool = AsyncMock(return_value=result)
+
+    entrypoint = get_entrypoint_for_tool(mock_tool, session)
+    result = await entrypoint()
+
+    assert result.content == "hello"
+    assert result.structured_content is None
+
+
+def test_tool_result_model_dump_roundtrip_preserves_structured_content():
+    tool_result = ToolResult(content="hello", structured_content={"key": "value", "list": [1, 2, 3]})
+    payload = tool_result.model_dump()
+    restored = ToolResult.model_validate(payload)
+    assert restored.structured_content == {"key": "value", "list": [1, 2, 3]}
+
+
+@pytest.mark.asyncio
 async def test_mcp_tool_result_preserves_meta():
     mock_tool = MagicMock()
     mock_tool.name = "get_data"
@@ -1106,6 +1180,7 @@ def _make_session_returning(content_text: str):
     result.isError = False
     result.content = [TextContent(type="text", text=content_text)]
     result.meta = None
+    result.structuredContent = None
 
     session = AsyncMock()
     session.send_ping = AsyncMock()

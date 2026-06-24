@@ -68,6 +68,7 @@ def get_entrypoint_for_tool(
                 return ToolResult(
                     content=f"Error from MCP tool '{tool_name}': {result.content}",
                     metadata=result.meta,
+                    structured_content=getattr(result, "structuredContent", None),
                 )
 
             # Process the result content
@@ -150,6 +151,7 @@ def get_entrypoint_for_tool(
                 content=response_str.strip(),
                 metadata=result.meta,
                 images=images if images else None,
+                structured_content=getattr(result, "structuredContent", None),
             )
 
         # Execute the MCP tool call
