@@ -28,7 +28,7 @@ Agno allows you to own your agent stack. Maintain control of your data, context,
 
 - [Read the docs](https://docs.agno.com)
 - [Build your first agent in 20 lines of code.](https://docs.agno.com/first-agent)
-- [Build your own auto-improving agent platform.](https://docs.agno.com/agent-platform/overview)
+- [Build your own agent platform.](https://docs.agno.com/agent-platform/overview)
 
 ## Features
 
