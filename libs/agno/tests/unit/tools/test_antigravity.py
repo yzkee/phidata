@@ -1,6 +1,9 @@
 """Unit tests for AntigravityTools."""
 
 import json
+import sys
+import tempfile
+from pathlib import Path
 from typing import List
 from unittest.mock import MagicMock, patch
 
@@ -360,9 +363,6 @@ def test_download_environment_snapshot_current_without_cached_env_returns_error(
 # agent_directory loading
 # ---------------------------------------------------------------------------
 
-import tempfile  # noqa: E402
-from pathlib import Path  # noqa: E402
-
 
 def _make_toolkit_agent_dir(tmp: Path) -> Path:
     (tmp / "agent.yaml").write_text(
@@ -389,13 +389,7 @@ def test_agent_directory_register_false_parses_without_network():
     assert "/.agents/skills/haiku/SKILL.md" in targets
 
 
-def _symlink_or_skip(link: Path, target: Path) -> None:
-    try:
-        link.symlink_to(target)
-    except OSError:
-        pytest.skip("Symlinks not supported on this system")
-
-
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlinks require admin on Windows")
 def test_agent_directory_skips_workspace_and_skill_files_that_escape_via_symlink():
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
@@ -405,9 +399,12 @@ def test_agent_directory_skips_workspace_and_skill_files_that_escape_via_symlink
 
         secret = root / "outside_secret.txt"
         secret.write_text("OUTSIDE_SECRET")
-        _symlink_or_skip(agent_dir / "workspace" / "linked.txt", secret)
         (agent_dir / "skills" / "leaky").mkdir()
-        _symlink_or_skip(agent_dir / "skills" / "leaky" / "SKILL.md", secret)
+        try:
+            (agent_dir / "workspace" / "linked.txt").symlink_to(secret)
+            (agent_dir / "skills" / "leaky" / "SKILL.md").symlink_to(secret)
+        except OSError:
+            pytest.skip("Symlink creation not permitted on this platform")
 
         tools = AntigravityTools(api_key="dummy", agent_directory=str(agent_dir), register=False)
 
@@ -420,6 +417,7 @@ def test_agent_directory_skips_workspace_and_skill_files_that_escape_via_symlink
     assert "OUTSIDE_SECRET" not in contents
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlinks require admin on Windows")
 def test_agent_directory_ignores_agents_md_that_escapes_via_symlink():
     captured: List[dict] = []
 
@@ -435,7 +433,10 @@ def test_agent_directory_ignores_agents_md_that_escapes_via_symlink():
         secret = Path(d) / "outside_secret.txt"
         secret.write_text("OUTSIDE_SECRET")
         (agent_dir / "AGENTS.md").unlink()
-        _symlink_or_skip(agent_dir / "AGENTS.md", secret)
+        try:
+            (agent_dir / "AGENTS.md").symlink_to(secret)
+        except OSError:
+            pytest.skip("Symlink creation not permitted on this platform")
 
         with _patch_sync_client(httpx.MockTransport(handler)):
             AntigravityTools(api_key="dummy", agent_directory=str(agent_dir))
@@ -446,6 +447,7 @@ def test_agent_directory_ignores_agents_md_that_escapes_via_symlink():
     assert "OUTSIDE_SECRET" not in body.get("instructions", "")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlinks require admin on Windows")
 def test_agent_directory_skips_source_dir_that_is_a_symlink_to_outside():
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
@@ -458,7 +460,10 @@ def test_agent_directory_skips_source_dir_that_is_a_symlink_to_outside():
         outside = root / "outside_dir"
         outside.mkdir()
         (outside / "secret.txt").write_text("OUTSIDE_DIR_SECRET")
-        _symlink_or_skip(agent_dir / "workspace", outside)
+        try:
+            (agent_dir / "workspace").symlink_to(outside)
+        except OSError:
+            pytest.skip("Symlink creation not permitted on this platform")
 
         tools = AntigravityTools(api_key="dummy", agent_directory=str(agent_dir), register=False)
 
@@ -471,6 +476,7 @@ def test_agent_directory_skips_source_dir_that_is_a_symlink_to_outside():
     assert "/.agents/skills/haiku/SKILL.md" in targets
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX symlinks require admin on Windows")
 def test_agent_directory_rejects_agent_yaml_that_escapes_via_symlink():
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
@@ -481,7 +487,10 @@ def test_agent_directory_rejects_agent_yaml_that_escapes_via_symlink():
         outside_yaml = root / "outside.yaml"
         outside_yaml.write_text("id: evil\nbase_agent: antigravity-preview-05-2026\n")
         (agent_dir / "agent.yaml").unlink()
-        _symlink_or_skip(agent_dir / "agent.yaml", outside_yaml)
+        try:
+            (agent_dir / "agent.yaml").symlink_to(outside_yaml)
+        except OSError:
+            pytest.skip("Symlink creation not permitted on this platform")
 
         with pytest.raises(FileNotFoundError):
             AntigravityTools(api_key="dummy", agent_directory=str(agent_dir), register=False)
