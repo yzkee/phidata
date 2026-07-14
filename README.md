@@ -20,7 +20,7 @@ Agno is a framework and runtime for agent platforms. Build agents, run them as a
 - Run your agent platform using the AgentOS runtime.
 - Manage everything using the AgentOS UI.
 
-Agno allows you to own your agent stack. Maintain control of your data, memory, and security posture (JWT-based RBAC); and turns your agent platform into a learning loop using simulations and usage data.
+Agno allows you to own your agent stack. Maintain control of your data, memory, and security posture (JWT-based RBAC), and turn your agent platform into a learning loop with simulations and usage data.
 
 <img width="3192" height="2038" alt="demo-os" src="https://github.com/user-attachments/assets/6d21e6bc-111f-4b81-ba29-6550fead89b2" />
 
