@@ -14,7 +14,7 @@
 
 ## Introduction
 
-Agno is a framework and runtime for building agent platforms: build agents, run them as a service, and manage your platform using a web UI.
+Agno is a framework and runtime for building agent platforms. Build agents, run them as a service, manage your platform using a web UI.
 
 - Build your agent platform using the Agno SDK.
 - Run your agent platform using the AgentOS runtime.
