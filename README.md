@@ -35,11 +35,11 @@ Clone https://github.com/agno-agi/agentos-railway into a folder called
 agent-platform, cd in, read the README, and follow the get started guide.
 ```
 
-Your coding agent will set up your agent platform and run it locally using Docker, giving you a REST API for serving your agents, a Postgres database for storing your data and traces, an MCP server, and a control plane at [os.agno.com](https://os.agno.com).
+Your coding agent will set up your agent platform and run it locally using Docker, giving you a REST API for serving your agents, a Postgres database for storing your data and traces, an MCP server, and a control plane.
 
 Deploying somewhere else? Use the same prompt but point it to a different repo. The starter templates are identical except for the deploy scripts: swap [agentos-railway](https://github.com/agno-agi/agentos-railway) for [agentos-docker](https://github.com/agno-agi/agentos-docker), [agentos-aws](https://github.com/agno-agi/agentos-aws), [agentos-gcp](https://github.com/agno-agi/agentos-gcp), [agentos-azure](https://github.com/agno-agi/agentos-azure), [agentos-fly](https://github.com/agno-agi/agentos-fly), [agentos-render](https://github.com/agno-agi/agentos-render), [agentos-modal](https://github.com/agno-agi/agentos-modal), or [agentos-helm](https://github.com/agno-agi/agentos-helm).
 
-Prefer to start from code?
+### Prefer to code by hand?
 
 - [Build your first agent in 20 lines of code.](https://docs.agno.com/first-agent)
 - [Build your own agent platform.](https://docs.agno.com/agent-platform/overview)
