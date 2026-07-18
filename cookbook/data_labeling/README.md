@@ -1,10 +1,10 @@
 # Data labeling
 
-End-to-end examples for data classification and labeling using agents.
+Agents for labeling, classification, and synthetic data generation. 26 folders: 68 single-file runnable examples plus the `image_search` app (74 Python files in all).
 
 Each subfolder holds examples for one theme, containing a `basic.py` that runs end-to-end, plus variants that add task-meaningful options on top.
 
-Workflows are organized by modality (text, image, audio, video, document) and output shape (classify, extract, rank, span-label). Further patterns (`_17_llm_as_judge`, `_18_quality_review`, `_19_inter_annotator_agreement`) compose on top of any of these, and the synthetic-data workflows (`_20`-`_22`) generate and curate training data rather than label existing inputs.
+Workflows are organized by modality (text, image, audio, video, document) and output shape (classify, extract, rank, span-label). Further patterns (`_17_llm_as_judge`, `_18_quality_review`, `_19_inter_annotator_agreement`) compose on top of any of these, and the synthetic-data workflows (`_20`-`_25`) generate and curate training data rather than label existing inputs.
 
 Start with [`_01_text_classification/basic.py`](_01_text_classification/basic.py). Every other cookbook mirrors its structure.
 
@@ -62,6 +62,9 @@ These emit training data (JSONL with per-row provenance; filtered files print ke
 - [`_20_instruction_generation/`](_20_instruction_generation/): self-instruct from seeds, typed Evol-Instruct operators, and a topic-tree pipeline emitting SFT chat rows.
 - [`_21_rejection_sampling/`](_21_rejection_sampling/): sample K solutions and keep what a programmatic verifier or judge accepts - verified reasoning traces, best-of-n for non-verifiable prompts, and RL prompt selection by pass rate.
 - [`_22_dataset_curation/`](_22_dataset_curation/): the filters - judge quality-gate over JSONL, pure-stdlib MinHash near-dedup, and 13-gram benchmark decontamination.
+- [`_23_critique_and_revision/`](_23_critique_and_revision/): constitutional-AI-style draft, critique against a written principle, revise - SFT rows with critique provenance, plus (chosen, rejected) pairs in the exact shape the `_05` jury consumes.
+- [`_24_persona_driven_generation/`](_24_persona_driven_generation/): typed personas condition prompt and gold-answer problem generation, with a measured (not asserted) diversity report.
+- [`_25_tool_call_trajectories/`](_25_tool_call_trajectories/): function-calling SFT data validated against real agno tool schemas, multi-turn user-sim vs tool-executing assistant rollouts, and a judge filter keeping successful trajectories.
 
 ## Running a cookbook
 
