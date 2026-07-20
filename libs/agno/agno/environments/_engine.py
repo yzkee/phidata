@@ -33,8 +33,9 @@ _STATUS_TO_STOP = {
 
 
 class StopReason(str, Enum):
-    """Why an attempt stopped. Values are lowercase and equal to their names, so the
-    natural string comparison works -- a deliberate break with RunStatus's casing."""
+    """Why an attempt stopped. Values are lowercase and equal to their names, so
+    natural string comparison works; not interchangeable with RunStatus values,
+    which use a different casing."""
 
     completed = "completed"  # run finished; the only state a scorer sees
     error = "error"  # run raised or yielded an error event
@@ -56,6 +57,10 @@ class AttemptResult:
     # completes, so exhaustion is invisible to a status check. The attempt is still
     # scored; downstream consumers filter on the flag.
     tool_call_limit_hit: bool = False
+    # The exception class name when one is known (raise path, or an error event that
+    # carried error_type); None when only a typeless error event was seen. Structured
+    # so the error-storm check does not have to parse it back out of `error`.
+    error_type: Optional[str] = None
 
 
 @dataclass
@@ -64,6 +69,7 @@ class _AttemptState:
     score: Optional[Score] = None
     errors: List[str] = field(default_factory=list)
     errored: bool = False
+    error_type: Optional[str] = None  # first known exception class, if any
 
 
 def _materialize(subject: Any) -> Any:
@@ -156,9 +162,13 @@ async def _attempt_body(
                 error_type = getattr(event, "error_type", None)
                 if error_type:
                     error_text = f"{error_type}: {error_text}"
+                    if state.error_type is None:
+                        state.error_type = str(error_type)
                 state.errors.append(str(error_text))
     except Exception as exc:
         state.errored = True
+        if state.error_type is None:
+            state.error_type = type(exc).__name__
         state.errors.append(f"{type(exc).__name__}: {exc}")
         return
 
@@ -192,6 +202,7 @@ async def _run_attempt(
             stop_reason=StopReason.error,
             duration_seconds=time.perf_counter() - start,
             error=f"{type(exc).__name__}: {exc}",
+            error_type=type(exc).__name__,
         )
 
     timed_out = False
@@ -221,6 +232,7 @@ async def _run_attempt(
         duration_seconds=time.perf_counter() - start,
         error="; ".join(state.errors) if state.errors else None,
         tool_call_limit_hit=_tool_call_limit_hit(state.run),
+        error_type=state.error_type,
     )
 
 
