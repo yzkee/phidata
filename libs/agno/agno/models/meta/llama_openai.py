@@ -81,4 +81,4 @@ class LlamaOpenAI(OpenAILike):
         Returns:
             Dict[str, Any]: The formatted message.
         """
-        return format_message(message, openai_like=True)
+        return format_message(message, openai_like=True, compress_tool_results=compress_tool_results)
